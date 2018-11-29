@@ -22,6 +22,10 @@ var tooltip = d3.select("#map")
 	 .append("div")
 	 .attr("class", "tooltip hidden");
 
+var selectedCountries = new Array(null, null);
+
+var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
+
 function drawWorldMap() {
 	var viewWidth = window.innerWidth - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
@@ -50,16 +54,12 @@ function drawWorldMap() {
 				.append("path")
 				.attr("name", function(d) {return d.properties.name;})
 				.attr("id", function(d) { return d.id;})
-				.on("click", function(d) {
-					console.log("You clicked on country: " + d.id);
-				})
+				.on("click", clicked)
 				.on("mousemove", showTooltip)
-				.on("mouseover", selected)
-				.on("mouseout",  function(d,i) {
-					tooltip.classed("hidden", true);
-				})
+				.on("mouseover", hovered)
+				.on("mouseout",  mouseOut)
 				.attr("d", path)
-				.attr("style", function(d, i) { return "fill-opacity: " + (i/177) });
+				.attr("style",  countryStyle);
 	});
 }
 
@@ -72,10 +72,53 @@ function showTooltip(d) {
 	.html(label);
 }
 
-function selected() {
-  d3.select('.selected').classed('selected', false);
-  d3.select(this).classed('selected', true);
+function mouseOut() {
+	//hide tooltip
+	tooltip.classed("hidden", true);
+	//unhover
+ 	d3.select('.hovered').classed('hovered', false);
 }
+
+function clicked(){
+ 	//unhover
+ 	d3.select('.hovered').classed('hovered', false);
+
+ 	//handle click
+ 	setSelected(this);
+}
+
+//max 2 selected
+function setSelected(element){
+	if(selectedCountries[0] === element || selectedCountries[1] === element){
+		return;
+	}
+	//select the selection
+	if(selectedCountries[0] === null){
+		selectedCountries[0] = element;
+	} else {
+		if(selectedCountries[1] !== null){ //unselect 3rd country
+			d3.select(selectedCountries[1]).attr('class', '');
+		}
+		selectedCountries[1] = selectedCountries[0];
+		selectedCountries[0] = element;
+	}
+	//put class selected on selection
+	selectedCountries.forEach(function(elem){
+		if(elem === null){
+		} else {
+			d3.select(elem).attr('class', 'selected');
+		}
+	})
+}
+
+function hovered(){
+	if(d3.select(this).classed('selected')){
+		return;
+	} 
+	d3.select('.hovered').classed('hovered', false);
+	d3.select(this).classed('hovered', true);
+}
+
 
 
 function zoomed() {

@@ -12,6 +12,14 @@ svg {
   fill-opacity: 1 !important;
 }
 
+.defaultCountry{
+}
+
+.hovered {
+  fill: pink;
+  fill-opacity: 0.8 !important;
+}
+
 .boundary {
   fill: #DEB887;
   stroke: black;
