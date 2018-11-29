@@ -1,48 +1,4 @@
-//First get data
-
-var StartYear = 1961;
-var EndYear = 2017
-
-d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
-	var growthArray = [];
-	for(i = StartYear; i < EndYear; i ++){
-		growthArray.push(+d[i + " [YR" + i + "]"]);
-	}
-	//console.log(d);
-  return {
-  	country_code : d["Country Code"],
-  	country_name: d["Country Name"],
-  	series_name: d["Series Name"],
-  	series_code: d["Series Code"],
-  	gdpGrowth : growthArray
-  };
-}, function(data){
-	console.log(data[1]);
-});
-
-function getCountryData(c1, c2){
-	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
-	var growthArray = [];
-	for(i = StartYear; i < EndYear; i ++){
-		growthArray.push(+d[i + " [YR" + i + "]"]);
-	}
-  return {
-  	country_code : d["Country Code"],
-  	country_name: d["Country Name"],
-  	series_name: d["Series Name"],
-  	series_code: d["Series Code"],
-  	gdpGrowth : growthArray
-  };
-}, function(data){
-	data.forEach(function(element){
-		if(element.country_code === c1 || element.country_code === c2){
-			console.log(element);
-		}
-	})
-});
-}
-
-
+Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
 var margin = {top: 20, right: 20, bottom: 20, left: 20};
 var viewWidth = window.innerWidth / 2 - margin.right;
@@ -76,6 +32,169 @@ var tooltip = d3.select("#map")
 	 .attr("class", "tooltip hidden");
 
 var selectedCountries = new Array(null, null);
+
+var x = d3.scaleLinear()
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .range([height, 0]);
+
+var colors = ["blue", "red"];
+var color = d3.scaleLinear()
+    .range(colors);
+
+var xAxis = d3.axisBottom()
+    .scale(x);
+
+var yAxis = d3.axisLeft()
+    .scale(y);
+
+var xValue = "x";
+var yValue = "y";
+var colorValue = "a";
+
+var svg2 = d3.select("svg2")
+    .attr("width", viewWidth)
+    .attr("height", viewHeight)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var defs = svg2.append( "defs" );
+
+var legendGradient = defs.append( "linearGradient" )
+    .attr( "id", "legendGradient" )
+    .attr( "x1", "0" )
+    .attr( "x2", "0" )
+    .attr( "y1", "1" )
+    .attr( "y2", "0" );
+
+legendGradient.append( "stop" )
+    .attr( "id", "gradientStart" )
+    .attr( "offset", "0%" )
+    .style( "stop-opacity", 1);
+
+legendGradient.append( "stop" )
+    .attr( "id", "gradientStop" )
+    .attr( "offset", "100%" )
+    .style( "stop-opacity", 1);
+
+var points;
+
+function drawScatterplot(d1, d2) {
+
+	data = [];
+	data.push(d1);
+	data.push(d2);
+	console.log("d1: " + d1);
+	console.log("d2: " + d2);
+	console.log("data: " + data);
+
+	var xArray = Array.range(1961, 2017);
+
+  var xExtent = d3.extent(xArray, function(d) { return d; });
+  var yExtent = d3.extent(data, function(d) { return d["gdpGrowth"]; });
+
+  x.domain(xExtent).nice();
+  y.domain(yExtent).nice();
+
+  svg2.selectAll("g").remove();
+
+  svg2.append("g")
+      .attr("id", "xAxis")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("id", "xLabel")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("x");
+
+  svg2.append("g")
+      .attr("id", "yAxis")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("id", "yLabel")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("y");
+
+  points = svg2.append("g")
+      .attr("class", "plotArea")
+    .selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 3.5)
+      .attr("cx", function(d) { return x(Array.range(1961, 2017)); })
+      .attr("cy", function(d) { return y(d["gdpGrowth"]); })
+
+  svg2.select("#gradientStart")
+    .style("stop-color", colors[0]);
+  svg2.select("#gradientStop")
+    .style("stop-color", colors[1]);
+
+  var legend = svg2.append("g")
+      .attr("class", "legend");
+
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 72)
+      .style("fill", "url(#legendGradient)");
+
+  legend.append("text")
+      .attr("x", width - 22)
+      .attr("y", 6)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text("high");
+
+  legend.append("text")
+      .attr("x", width - 22)
+      .attr("y", 66)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text("low");
+
+}
+
+var StartYear = 1961;
+var EndYear = 2017
+
+
+function getCountryData(c1, c2){
+	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
+	var growthArray = [];
+	for(i = StartYear; i < EndYear; i ++){
+		growthArray.push(+d[i + " [YR" + i + "]"]);
+	}
+  return {
+  	country_code : d["Country Code"],
+  	country_name: d["Country Name"],
+  	series_name: d["Series Name"],
+  	series_code: d["Series Code"],
+  	gdpGrowth : growthArray
+  };
+}, function(data){
+	var compare = [];
+	data.forEach(function(element){
+		if(element.country_code === c1 || element.country_code === c2){
+			console.log(element);
+			compare.push(element);
+		}
+	})
+	drawScatterplot(compare[0], compare[1]);
+
+});
+}
+
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
 

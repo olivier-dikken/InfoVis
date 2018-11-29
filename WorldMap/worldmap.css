@@ -34,6 +34,17 @@ svg {
   display: none;
 }
 
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke-width: 0.25pt;
+  stroke: #555;
+}
+
 div.tooltip {
   color: #222; 
   background: #fff; 
