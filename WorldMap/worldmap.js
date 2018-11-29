@@ -1,5 +1,5 @@
 var margin = {top: 20, right: 20, bottom: 20, left: 20};
-var viewWidth = window.innerWidth - margin.right;
+var viewWidth = window.innerWidth / 2 - margin.right;
 var viewHeight = window.innerHeight - margin.bottom;
 
 var width = viewWidth - margin.left - margin.right;
@@ -7,12 +7,19 @@ var height = viewHeight - margin.top - margin.bottom;
 
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
+	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
 
-var svg = d3.select("#map").append("svg")
+var svg1 = d3.select("#map").append("svg")
 	.attr("width", width)
 	.attr("height", height)
+	.attr("class","map")
 	.call(zoom);
+	
+var svg2 = d3.select("#comparison").append("svg")
+	.attr("width", width)
+	.attr("height", height)
+	.attr("class","comparison");
 
 //for tooltip 
 var offsetL = document.getElementById('map').offsetLeft+10;
@@ -27,7 +34,7 @@ var selectedCountries = new Array(null, null);
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
 
 function drawWorldMap() {
-	var viewWidth = window.innerWidth - margin.right;
+	var viewWidth = window.innerWidth / 2 - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
 	
 	var width = viewWidth - margin.left - margin.right;
@@ -41,7 +48,7 @@ function drawWorldMap() {
 		.projection(projection);
 		
 	//need this for correct panning
-	var g = svg.append("g");
+	var g = svg1.append("g");
 
 	//get json data and draw it
 	d3.json("countries.topo.json", function(error, world) {
@@ -65,7 +72,7 @@ function drawWorldMap() {
 
 function showTooltip(d) {
   label = d.properties.name;
-  var mouse = d3.mouse(svg.node())
+  var mouse = d3.mouse(svg1.node())
 	.map( function(d) { return parseInt(d); } );
   tooltip.classed("hidden", false)
 	.attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
@@ -122,25 +129,22 @@ function hovered(){
 
 
 function zoomed() {
-	d3.event.transform.x = Math.min(0, Math.max(d3.event.transform.x, width - width * d3.event.transform.k));
-	d3.event.transform.y = Math.min(0, Math.max(d3.event.transform.y, height - height * d3.event.transform.k));
 	d3.select("g").attr("transform", d3.event.transform);
 
 	//adjust the stroke width based on zoom level
-	d3.selectAll(".boundary")
-		.style("stroke-width", 1 / d3.event.transform.k);
+	d3.select("g").style("stroke-width", 1 / d3.event.transform.k);
 	
 }
 
 function resize() {
 	var margin = {top: 20, right: 20, bottom: 20, left: 20};
-	var viewWidth = window.innerWidth - margin.right;
+	var viewWidth = window.innerWidth / 2 - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
 
 	width = viewWidth - margin.left - margin.right;
 	height = viewHeight - margin.top - margin.bottom;
 
-	d3.select("svg")
+	d3.selectAll("svg")
 		.attr("width", width)
 		.attr("height", height)
 

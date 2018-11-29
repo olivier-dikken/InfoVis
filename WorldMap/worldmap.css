@@ -7,6 +7,10 @@ svg {
   background-color: white;
 }
 
+.comparison {
+  background-color: gray;
+}
+
 .selected {
   fill: red;
   fill-opacity: 1 !important;
