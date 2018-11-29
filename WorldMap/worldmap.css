@@ -8,7 +8,7 @@ svg {
 }
 
 .comparison {
-  background-color: gray;
+  background-color: white;
 }
 
 .selected {
@@ -43,6 +43,14 @@ svg {
 .dot {
   stroke-width: 0.25pt;
   stroke: #555;
+}
+
+.dotscountry1 {
+	fill: red;
+}
+
+.dotscountry2 {
+	fill: blue;
 }
 
 div.tooltip {
