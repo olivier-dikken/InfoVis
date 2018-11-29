@@ -1,3 +1,49 @@
+//First get data
+
+var StartYear = 1961;
+var EndYear = 2017
+
+d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
+	var growthArray = [];
+	for(i = StartYear; i < EndYear; i ++){
+		growthArray.push(+d[i + " [YR" + i + "]"]);
+	}
+	//console.log(d);
+  return {
+  	country_code : d["Country Code"],
+  	country_name: d["Country Name"],
+  	series_name: d["Series Name"],
+  	series_code: d["Series Code"],
+  	gdpGrowth : growthArray
+  };
+}, function(data){
+	console.log(data[1]);
+});
+
+function getCountryData(c1, c2){
+	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
+	var growthArray = [];
+	for(i = StartYear; i < EndYear; i ++){
+		growthArray.push(+d[i + " [YR" + i + "]"]);
+	}
+  return {
+  	country_code : d["Country Code"],
+  	country_name: d["Country Name"],
+  	series_name: d["Series Name"],
+  	series_code: d["Series Code"],
+  	gdpGrowth : growthArray
+  };
+}, function(data){
+	data.forEach(function(element){
+		if(element.country_code === c1 || element.country_code === c2){
+			console.log(element);
+		}
+	})
+});
+}
+
+
+
 var margin = {top: 20, right: 20, bottom: 20, left: 20};
 var viewWidth = window.innerWidth - margin.right;
 var viewHeight = window.innerHeight - margin.bottom;
@@ -101,6 +147,7 @@ function setSelected(element){
 		}
 		selectedCountries[1] = selectedCountries[0];
 		selectedCountries[0] = element;
+		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 	//put class selected on selection
 	selectedCountries.forEach(function(elem){
