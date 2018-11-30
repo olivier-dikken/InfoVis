@@ -12,26 +12,24 @@ var zoom = d3.zoom()
 	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
 
-d3.select("#map").append("svg")
+var svg1 = d3.select("#map").append("svg")
 	.attr("id", "svg1")
-	.attr("width", width)
-	.attr("height", height)
+	.attr("width", viewWidth)
+	.attr("height", viewHeight)
 	.call(zoom);
-
-var svg1 = d3.select("#svg1");
 
 d3.select("#comparison").append("svg")
 	.attr("id", "svg2")
-	.attr("width", width)
-	.attr("height", height);	
+	.attr("width", viewWidth)
+	.attr("height", viewHeight);	
 
 var svg2 = d3.select("#svg2")
 	.append("g")
-		.attr("transform", "translate(" + 30 + "," + -25 + ")");
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 		
 //for tooltip 
-var offsetL = document.getElementById('map').offsetLeft+10;
-var offsetT = document.getElementById('map').offsetTop+10;
+var offsetL = d3.select("#map").node().offsetLeft+10;
+var offsetT = d3.select("#map").node().offsetTop+10;
 
 var tooltip = d3.select("#map")
 	 .append("div")
@@ -70,11 +68,9 @@ function drawScatterplot(d1, d2) {
 		data[i].gdpGrowth2 = d2[i];
 		data[i].x = xArray[i];
 	}
-	console.log("d1: " + d1);
-	console.log("d2: " + d2);
-	console.log("data[0]: " + data[0]);
-
-	
+	//console.log("d1: " + d1);
+	//console.log("d2: " + d2);
+	//console.log("data: " + data);
 
 	var xExtent = d3.extent(xArray, function(d) { return d; });
 	var yExtent = d3.extent(data, function(d) { return d["gdpGrowth1"]; });
@@ -137,7 +133,6 @@ function drawScatterplot(d1, d2) {
 var StartYear = 1961;
 var EndYear = 2017
 
-
 function getCountryData(c1, c2){
 	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
 	var growthArray = [];
@@ -170,7 +165,6 @@ function getCountryData(c1, c2){
 
 });
 }
-
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
 
@@ -283,19 +277,29 @@ function resize() {
 	var viewWidth = window.innerWidth / 2 - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
 
-	width = viewWidth - margin.left - margin.right;
-	height = viewHeight - margin.top - margin.bottom;
-
 	d3.selectAll("svg")
-		.attr("width", width)
-		.attr("height", height)
+		.attr("width", viewWidth)
+		.attr("height", viewHeight)
 
 	d3.select("g")
-		.attr("width", width)
-		.attr("height", height)
+		.attr("width", viewWidth)
+		.attr("height", viewHeight)
 
 	d3.select("g").remove();
 	drawWorldMap();
+	
+	width = viewWidth - margin.left - margin.right;
+	height = viewHeight - margin.top - margin.bottom;
+	
+	x.range([0, width]);
+	y.range([height, 0]);
+	
+	xAxis.scale(x);
+	yAxis.scale(y);
+  
+	if (selectedCountries[1] !== null) {
+		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
+	}
 }
 
 d3.select(window).on("resize", resize);
