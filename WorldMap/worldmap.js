@@ -1,11 +1,12 @@
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40};
-var viewWidth = window.innerWidth / 2 - margin.right;
-var viewHeight = window.innerHeight - margin.bottom;
+var viewWidth = window.innerWidth / 2 - (margin.right + 1);
+var viewHeight = window.innerHeight - (margin.bottom);
 
 var width = viewWidth - margin.left - margin.right;
 var height = viewHeight - margin.top - margin.bottom;
+var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
@@ -21,11 +22,20 @@ var svg1 = d3.select("#map").append("svg")
 d3.select("#comparison").append("svg")
 	.attr("id", "svg2")
 	.attr("width", viewWidth)
-	.attr("height", viewHeight);	
+	.attr("height", viewHeight/2-1);	
+
+d3.select("#versus").append("svg")
+	.attr("id", "svg3")
+	.attr("width", viewWidth)
+	.attr("height", viewHeight/2-1);	
 
 var svg2 = d3.select("#svg2")
 	.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var svg3 = d3.select("#svg3")
+	.append("g")
+		.attr("transform", "translate(" + margin.left + "," + (margin.top + viewHeight/2) + ")");
 		
 //for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -43,6 +53,10 @@ var x = d3.scaleLinear()
 var y = d3.scaleLinear()
     .range([height, 0]);
 
+//half height
+var y2 = d3.scaleLinear()
+	.range([halfHeight, 0])
+
 var colors = ["blue", "red"];
 var color = d3.scaleLinear()
     .range(colors);
@@ -53,37 +67,45 @@ var xAxis = d3.axisBottom()
 var yAxis = d3.axisLeft()
     .scale(y);
 
+//half height
+var yAxis2 = d3.axisLeft()
+	.scale(y2);
+
 var xValue = "x";
 var yValue = "y";
 var colorValue = "a";
 
 function drawScatterplot(d1, d2) {
-	var data = [];
+	var data1 = [];
+	var data2 = [];
 	var xArray = Array.range(1961, 2017);
 	
 	for (var i = 0; i < d1.length; i++) {
-		var item = {"gdpGrowth1": d1[i],"gdpGrowth2": d2[i]};
-		data[i] = item;
-		data[i].gdpGrowth1 = d1[i];
-		data[i].gdpGrowth2 = d2[i];
-		data[i].x = xArray[i];
+		if(!isNaN(d1[i])){
+			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
+			data1.push(item);
+		}
+		if(!isNaN(d2[i])){
+			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
+			data2.push(item);
+		}
 	}
-	//console.log("d1: " + d1);
-	//console.log("d2: " + d2);
-	//console.log("data: " + data);
 
 	var xExtent = d3.extent(xArray, function(d) { return d; });
-	var yExtent = d3.extent(data, function(d) { return d["gdpGrowth1"]; });
+	var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
 
 	x.domain(xExtent).nice();
 	y.domain(yExtent).nice();
+
+	//half height
+	y2.domain(yExtent).nice();
 
 	svg2.selectAll("g").remove();
 
 	svg2.append("g")
 		.attr("id", "xAxis")
 		.attr("class", "x axis")
-		.attr("transform", "translate(0," + height + ")")
+		.attr("transform", "translate(0," + halfHeight + ")")
 		.call(xAxis)
 	.append("text")
 		.attr("class", "label")
@@ -96,7 +118,7 @@ function drawScatterplot(d1, d2) {
 	svg2.append("g")
 		.attr("id", "yAxis")
 		.attr("class", "y axis")
-		.call(yAxis)
+		.call(yAxis2)
 	.append("text")
 		.attr("class", "label")
 		.attr("id", "yLabel")
@@ -109,24 +131,25 @@ function drawScatterplot(d1, d2) {
 	var points1 = svg2.append("g")
 		.attr("class", "plotArea")
 	.selectAll(".dot")
-		.data(data)
+		.data(data1)
     .enter().append("circle")
 		.attr("class", "dot")
 		.attr("class", "dotscountry1")
 		.attr("r", 3.5)
-		.attr("cx", function(d) { return x(d.x); })
-		.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
+		.attr("cx", function(d) { return x(d.year); })
+		.attr("cy", function(d) { return y2(d.gdpGrowth); })
+		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 
 	var points2 = svg2.append("g")
 		.attr("class", "plotArea")
     .selectAll(".dot")
-		.data(data)
+		.data(data2)
     .enter().append("circle")
 		.attr("class", "dot")
 		.attr("class", "dotscountry2")
 		.attr("r", 3.5)
-		.attr("cx", function(d) { return x(d.x); })
-		.attr("cy", function(d) { return y(d["gdpGrowth2"]); })
+		.attr("cx", function(d) { return x(d.year); })
+		.attr("cy", function(d) { return y2(d.gdpGrowth); })
 
 }
 
