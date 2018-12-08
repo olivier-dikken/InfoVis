@@ -50,8 +50,9 @@ var selectedCountries = new Array(null, null);
 var x = d3.scaleLinear()
     .range([0, width]);
 
-var y = d3.scaleLinear()
-    .range([height, 0]);
+//half height
+var y1 = d3.scaleLinear()
+    .range([halfHeight, 0]);
 
 //half height
 var y2 = d3.scaleLinear()
@@ -64,8 +65,8 @@ var color = d3.scaleLinear()
 var xAxis = d3.axisBottom()
     .scale(x);
 
-var yAxis = d3.axisLeft()
-    .scale(y);
+var yAxis1 = d3.axisLeft()
+    .scale(y1);
 
 //half height
 var yAxis2 = d3.axisLeft()
@@ -95,7 +96,7 @@ function drawScatterplot(d1, d2) {
 	var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
 
 	x.domain(xExtent).nice();
-	y.domain(yExtent).nice();
+	y1.domain(yExtent).nice();
 
 	//half height
 	y2.domain(yExtent).nice();
@@ -300,25 +301,37 @@ function resize() {
 	var viewWidth = window.innerWidth / 2 - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
 
-	d3.selectAll("svg")
+	d3.select("#svg1")
 		.attr("width", viewWidth)
 		.attr("height", viewHeight)
-
+	
+	d3.select("#svg2")
+		.attr("width", viewWidth)
+		.attr("height", viewHeight/2-1)
+		
+	d3.select("#svg3")
+		.attr("width", viewWidth)
+		.attr("height", viewHeight/2-1)
+		
 	d3.select("g")
 		.attr("width", viewWidth)
 		.attr("height", viewHeight)
 
 	d3.select("g").remove();
+	
 	drawWorldMap();
 	
 	width = viewWidth - margin.left - margin.right;
 	height = viewHeight - margin.top - margin.bottom;
+	halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 	
 	x.range([0, width]);
-	y.range([height, 0]);
+	y1.range([halfHeight, 0]);
+	y2.range([halfHeight, 0]);
 	
 	xAxis.scale(x);
-	yAxis.scale(y);
+	yAxis1.scale(y1);
+	yAxis2.scale(y2);
   
 	if (selectedCountries[1] !== null) {
 		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
