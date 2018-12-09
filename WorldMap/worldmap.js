@@ -75,7 +75,7 @@ var yDualBarChart = d3.scaleLinear().range([halfHeight, 0]);
 
 var xAxisDBC = d3.axisBottom()
     .scale(xDualBarChart)
-	.tickValues(xArray.filter(function(d,i){ return !(i%5)})); // One tick value for each 5 years
+	.tickValues(xArray.filter(function(d,i){ return !((i+1)%5)})); // One tick value for each 5 years
 	
 var yAxisDBC = d3.axisLeft()
 	.scale(yDualBarChart)
@@ -145,7 +145,9 @@ function drawDualBarChart(d1, d2) {
 		.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
 		.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
 		.attr("year", function(d) { return d.year; })
-		.on("click", function(d) { setYear(d.year) }); 
+		.on("click", function(d) { setYear(d.year) })
+		.on("mouseout",  barMouseOut)
+		.on("mouseover", barHovered); 
 		
 	bars2.append("rect")
 		.attr("class", "bar2")
@@ -154,7 +156,9 @@ function drawDualBarChart(d1, d2) {
 		.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
 		.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
 		.attr("year", function(d) { return d.year; })
-		.on("click", function(d) { setYear(d.year) }); 
+		.on("click", function(d) { setYear(d.year) })
+		.on("mouseout",  barMouseOut)
+		.on("mouseover", barHovered); 		
 }
 
 function drawScatterplot(d1, d2) {
@@ -372,9 +376,18 @@ function zoomed() {
 	
 }
 
-function setYear(y){
+function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	CurrentYear = y;
+}
+
+function barHovered() {
+	d3.select(this).classed('barhovered', true);
+}
+
+function barMouseOut() {
+	//unhover
+ 	d3.select(this).classed('barhovered', false);
 }
 
 function resize() {
