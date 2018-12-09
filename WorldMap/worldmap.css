@@ -63,3 +63,10 @@ div.tooltip {
   opacity: 0.9; 
   position: absolute;
 }
+
+.bar1 {
+  fill: red;
+}
+.bar2 {
+  fill: blue;
+}
