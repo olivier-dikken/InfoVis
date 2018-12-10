@@ -1,3 +1,6 @@
+// World Map inspired by http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
+// Dual bar chart inspired by https://github.com/liufly/Dual-scale-D3-Bar-Chart and https://bl.ocks.org/mbostock/2368837
+
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
 var StartYear = 1961;
@@ -110,7 +113,8 @@ function drawDualBarChart(d1, d2) {
 
 	//var xExtent = d3.extent(xArray, function(d) { return d; });
 	var xExtent = xArray.map(function(d) { return d; });
-	var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
 
 	//xDualBarChart.domain(xExtent).nice(); // gives an error
 	xDualBarChart.domain(xExtent);
@@ -122,7 +126,8 @@ function drawDualBarChart(d1, d2) {
 	
 	svg3.append("g")
 		.attr("class", "x axis")
-		.attr("transform", "translate(0," + halfHeight + ")")
+		//.attr("transform", "translate(0," + halfHeight + ")")
+		.attr("transform", "translate(0," + yDualBarChart(0) + ")")
 		.call(xAxisDBC);
 	svg3.append("g")
 		.attr("class", "y axis axisLeft")
@@ -142,8 +147,10 @@ function drawDualBarChart(d1, d2) {
 		.attr("class", "bar1")
 		.attr("x", function(d) { return xDualBarChart(d.year); })
 		.attr("width", xDualBarChart.bandwidth()/2)
-		.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
-		.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+		//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
+		//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -153,8 +160,8 @@ function drawDualBarChart(d1, d2) {
 		.attr("class", "bar2")
 		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
 		.attr("width", xDualBarChart.bandwidth()/2)
-		.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
-		.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -177,7 +184,8 @@ function drawScatterplot(d1, d2) {
 	}
 
 	var xExtent = d3.extent(xArray, function(d) { return d; });
-	var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
 
 	x.domain(xExtent).nice();
 	y1.domain(yExtent).nice();
