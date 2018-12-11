@@ -17,15 +17,14 @@ var height = viewHeight - margin.top - margin.bottom;
 var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 
 
-//init global zoom variables
-var zoom = 1;
-var zoomk = 1;
 
 //WorldMap variables
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
 	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
+//init global zoom variables
+var zoomk = 1;
 		
 //offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -360,7 +359,8 @@ function resetCountrySelection(){
 	selectedCountries.forEach(function(elem){
 		if(elem === null){
 		} else {
-			d3.select(elem).attr('class', '');
+			d3.select(elem).classed('selected_1', false);
+			d3.select(elem).classed('selected_2', false);
 			d3.select(elem).attr("stroke-width", 1/zoomk + "px");
 		}
 	})
@@ -376,15 +376,15 @@ function setSelected(element){
 	}
 	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
-		d3.select(selectedCountries[0]).attr('class', 'selected_1');
+		d3.select(selectedCountries[0]).classed('selected_1', true);
 		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
 	} else {//if 1st country selected set 2nd selection
 		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
-			d3.select(selectedCountries[1]).attr('class', '');
+			d3.select(selectedCountries[1]).classed('selected_2', false);
 			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
 		}
 		selectedCountries[1] = element;
-		d3.select(selectedCountries[1]).attr('class', 'selected_2');
+		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
@@ -399,14 +399,13 @@ function hovered(){
 }
 
 function zoomed() {
-	zoom = d3.event.transform;
 	zoomk = d3.event.transform.k;
 
 	d3.select("g").attr("transform", zoom);
 
 	//adjust the stroke width based on zoom level
-	d3.select("g").attr("stroke-width", 1 / zoomk);
-	
+	d3.selectAll("path").attr("stroke-width", 1 / zoomk);
+
 	//put class selected on selection
 	selectedCountries.forEach(function(elem){
 		if(elem === null){

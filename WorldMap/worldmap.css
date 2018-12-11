@@ -30,7 +30,6 @@ svg {
 .boundary {
   fill: #DEB887;
   stroke: black;
-  /*stroke-width: 1px; */
 }
 
 .hidden {
