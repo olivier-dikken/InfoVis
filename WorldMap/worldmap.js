@@ -191,7 +191,28 @@ function getCountryData(c1, c2){
 }
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
-
+var minValue = Number.MAX_VALUE
+var maxValue = Number.MIN_VALUE
+d3.json("data.json", function(data){	
+		  for (var keyCountry in data){
+			  var regex = "Ref"
+			  for(var indicator in data[keyCountry]){
+				  if(indicator.match(regex)){
+					  year = 0
+					  value = data[keyCountry][indicator][year]
+					  if(value === null)continue;
+					  if(value < minValue){
+						  minValue = value;
+					  }
+					  if(value > maxValue){
+						  maxValue = value;
+					  }
+				  }				
+			  }		
+		  }
+		  console.log(maxValue)
+		  console.log(minValue)
+	  });
 function drawWorldMap() {
 	var viewWidth = window.innerWidth / 2 - margin.right;
 	var viewHeight = window.innerHeight - margin.bottom;
@@ -225,14 +246,26 @@ function drawWorldMap() {
 				.on("mouseover", hovered)
 				.on("mouseout",  mouseOut)
 				.attr("d", path)
-				.attr("style",  countryStyle);
+				.attr("style",  countryStyle)
+				.style("fill", colorScale);	
+						
+	});
+}
+function colorScale(d){
+	var countryCode = d.id
+	d3.json("data.json", function(data){	
+		var colors = d3.scaleLinear().domain([minValue, maxValue]).range(["#e8f3d2", "#3E9583", "#1F2D86"]);
+		var test = data[countryCode]
+		console.log(test)
+		year = 0
+		return colors(colorValue)
 	});
 }
 
 function showTooltip(d) {
   label = d.properties.name;
   var mouse = d3.mouse(svg1.node())
-	.map( function(d) { return parseInt(d); } );
+	.map(function(d) { return parseInt(d); } );
   tooltip.classed("hidden", false)
 	.attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
 	.html(label);
