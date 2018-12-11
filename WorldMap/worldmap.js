@@ -283,13 +283,17 @@ function getCountryData(c1, c2){
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
 var minValue = Number.MAX_VALUE
 var maxValue = Number.MIN_VALUE
-d3.json("data.json", function(data){	
+var countryData;
+d3.json("resources/data.json", function(data){	
+		countryData = data;
+		console.log(data)
 		  for (var keyCountry in data){
-			  var regex = "Ref"
+			  var regex = "Refugees_Total";
 			  for(var indicator in data[keyCountry]){
 				  if(indicator.match(regex)){
-					  year = 0
-					  value = data[keyCountry][indicator][year]
+					  // 66 is year 20
+					  year = 66;
+					  value = data[keyCountry][indicator][year];
 					  if(value === null)continue;
 					  if(value < minValue){
 						  minValue = value;
@@ -340,17 +344,44 @@ function drawWorldMap() {
 				.style("fill", colorScale);	
 						
 	});
+
+	var legend = svg.append("g")
+  .attr("class", "legend")
+  .attr("x", w - 65)
+  .attr("y", 25)
+  .attr("height", 100)
+  .attr("width", 100);
+
+  legend.append()
 }
-function colorScale(d){
+function colorScale(d){	
 	var countryCode = d.id
-	d3.json("data.json", function(data){	
-		var colors = d3.scaleLinear().domain([minValue, maxValue]).range(["#e8f3d2", "#3E9583", "#1F2D86"]);
-		var test = data[countryCode]
-		console.log(test)
-		year = 0
-		return colors(colorValue)
-	});
+	colors = [
+		'#7DB22E',
+		'#D4A10F',
+		'#F97C20',
+		'#F35F40',
+		'#FF0000'
+];
+	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(colors);			
+	// 66 is year 2017
+	var year = 66;
+	if(countryData[countryCode]){
+		if(countryData[countryCode]["Refugees_Total"]){
+			value = countryData[countryCode]["Refugees_Total"][year];
+			return colors(value);
+		}
+		else{
+			return "grey"
+		}
+		
+	}
+	else{
+		return "black"
+	}
+	
 }
+	
 
 function showTooltip(d) {
   label = d.properties.name;
@@ -483,4 +514,14 @@ function resize() {
 
 d3.select(window).on("resize", resize);
 
-drawWorldMap();
+// could also make this into an event listener maybe?
+function waitForElement(){
+    if(typeof countryData !== "undefined"){
+		drawWorldMap();
+    }
+    else{
+        setTimeout(waitForElement, 10);
+    }
+}
+waitForElement();
+//drawWorldMap();
