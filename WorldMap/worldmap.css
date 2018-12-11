@@ -11,9 +11,14 @@ svg {
   background-color: white;
 }
 
-.selected {
-  fill: red;
-  fill-opacity: 1 !important;
+.selected_1 {
+  stroke: red;
+  stroke-width: 5px;
+}
+
+.selected_2 {
+  stroke: blue;
+  stroke-width: 5px;
 }
 
 .defaultCountry{
