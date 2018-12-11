@@ -432,6 +432,11 @@ function zoomed() {
 function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	CurrentYear = y;
+	
+	//2 countries need to be selected before calling 'visualizeData()'
+	if (selectedCountries[1] !== null) {
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
 }
 
 function barHovered() {
