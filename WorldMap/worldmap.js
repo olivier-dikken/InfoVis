@@ -246,46 +246,11 @@ function drawScatterplot(d1, d2) {
 
 }
 
-/* function getCountryData(c1, c2){
-	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
-	var growthArray = [];
-	for(i = StartYear; i < EndYear; i ++){
-		growthArray.push(+d[i + " [YR" + i + "]"]);
-	}
-  return {
-  	country_code : d["Country Code"],
-  	country_name: d["Country Name"],
-  	series_name: d["Series Name"],
-  	series_code: d["Series Code"],
-  	gdpGrowth : growthArray
-  };
-}, function(data){
-	var country1 = 0;
-	var country2 = 0;
-	data.forEach(function(element, i){
-		if(element.country_code === c1){
-			console.log(element);
-			//compare.push(element);
-			country1 = i;
-		} else if (element.country_code === c2){
-			console.log(element);
-			//compare.push(element);
-			country2 = i;
-		}
-	})
-	//console.log(data[country1].gdpGrowth);
-	drawScatterplot(data[country1].gdpGrowth, data[country2].gdpGrowth);
-	drawDualBarChart(data[country1].gdpGrowth, data[country2].gdpGrowth);
 
-});
-} */
-
-function getCountryData(c1, c2){
+function visualizeData(c1, c2){
 	d3.json("resources/data.json", function(d) {
-	//console.log(d);
-	drawScatterplot(d[c1]["GDP growth (annual %)"], d[c2]["GDP growth (annual %)"]);
+	drawScatterplot(d[c1]["Refugees_Total"], d[c2]["GDP growth (annual %)"]);
 	drawDualBarChart(d[c1]["GDP growth (annual %)"], d[c2]["GDP growth (annual %)"]);
-
 	});
 }
 
@@ -352,29 +317,40 @@ function clicked(){
  	setSelected(this);
 }
 
-//max 2 selected
+//unselect countries and remove selected country styles
+function resetCountrySelection(){
+	selectedCountries.forEach(function(elem){
+		if(elem === null){
+		} else {
+			d3.select(elem).attr('class', '');
+			//d3.select(elem).style("stroke-width", "1px");
+		}
+	})
+	selectedCountries = [null, null];
+	svg2.selectAll("g").remove();
+	svg3.selectAll("g").remove();
+	//remove bars separately (not children of svg3)
+	svg3.selectAll(".bar1").remove();
+	svg3.selectAll(".bar2").remove();
+}
+
+//behaviour: replace 2nd selection
 function setSelected(element){
 	if(selectedCountries[0] === element || selectedCountries[1] === element){
 		return;
 	}
-	//select the selection
-	if(selectedCountries[0] === null){
+	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
-	} else {
-		if(selectedCountries[1] !== null){ //unselect 3rd country
+		d3.select(selectedCountries[0]).attr('class', 'selected_1');
+	} else {//if 1st country selected set 2nd selection
+		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
 			d3.select(selectedCountries[1]).attr('class', '');
+			//d3.select(selectedCountries[1]).style("stroke-width", "1px");
 		}
-		selectedCountries[1] = selectedCountries[0];
-		selectedCountries[0] = element;
-		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
+		selectedCountries[1] = element;
+		d3.select(selectedCountries[1]).attr('class', 'selected_2');
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	//put class selected on selection
-	selectedCountries.forEach(function(elem){
-		if(elem === null){
-		} else {
-			d3.select(elem).attr('class', 'selected');
-		}
-	})
 }
 
 function hovered(){
@@ -390,6 +366,13 @@ function zoomed() {
 
 	//adjust the stroke width based on zoom level
 	d3.select("g").style("stroke-width", 1 / d3.event.transform.k);
+	//put class selected on selection
+	selectedCountries.forEach(function(elem){
+		if(elem === null){
+		} else {
+			d3.select(elem).style("stroke-width", 5/d3.event.transform.k + "px");
+		}
+	})
 	
 }
 
@@ -452,8 +435,10 @@ function resize() {
 	xAxisDBC.scale(xDualBarChart);
 	yAxisDBC.scale(yDualBarChart);
 	
+
+	//2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
-		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 }
 
