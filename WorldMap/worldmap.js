@@ -3,8 +3,22 @@
 
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
-var StartYear = 1961;
-var EndYear = 2017;
+
+//init options
+var indicatorList = ["Refugees_Total", "GDP growth (annual %)"];
+var indicator_main = "Refugees_Total";
+var indicator_secondary = "GDP growth (annual %)";
+//fill select list
+var selectPrimary = document.getElementById("select_indicator_primary");
+indicatorList.forEach(function(element){
+	var option = document.createElement("option"); 
+	option.text = element;
+	selectPrimary.add(option);
+});
+
+//init config
+var StartYear = 1951;
+var EndYear = 2018;
 var CurrentYear = EndYear;
 var xArray = Array.range(StartYear, EndYear);
 
@@ -16,11 +30,15 @@ var width = viewWidth - margin.left - margin.right;
 var height = viewHeight - margin.top - margin.bottom;
 var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 
+
+
 //WorldMap variables
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
 	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
+//init global zoom variables
+var zoomk = 1;
 		
 //offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -93,6 +111,20 @@ var svg3 = d3.select("#svg3")
 	.append("g")
 		.attr("class", "dual bar chart")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+function updatePrimaryIndicator(){
+	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
+	if(newIndicatorName == indicator_main){
+		console.log("This indicator is already set as primary indicator.")
+		return;
+	}
+	//if newindicator exists display in html and set indicator_main
+	if(indicatorList.includes(newIndicatorName)){
+		document.getElementById("indicator_primary").innerHTML = newIndicatorName;
+		indicator_main = newIndicatorName;
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
+}
 		
 function drawDualBarChart(d1, d2) {
 	//console.log("d1: " + d1);
@@ -121,8 +153,6 @@ function drawDualBarChart(d1, d2) {
 	yDualBarChart.domain(yExtent).nice();
 	
 	svg3.selectAll("g").remove();
-	svg3.selectAll(".bar1").remove();
-	svg3.selectAll(".bar2").remove();
 	
 	svg3.append("g")
 		.attr("class", "x axis")
@@ -140,10 +170,11 @@ function drawDualBarChart(d1, d2) {
 		.style("text-anchor", "end")
 		.text("GDP growth");
 		
-	bars1 = svg3.selectAll(".bar1").data(data1).enter();
-	bars2 = svg3.selectAll(".bar2").data(data2).enter();
-	
-	bars1.append("rect")
+	svg3.append("g")
+		.attr("class", "bars1")
+	.selectAll(".bar1")
+		.data(data1)
+	.enter().append("rect")
 		.attr("class", "bar1")
 		.attr("x", function(d) { return xDualBarChart(d.year); })
 		.attr("width", xDualBarChart.bandwidth()/2)
@@ -156,7 +187,11 @@ function drawDualBarChart(d1, d2) {
 		.on("mouseout",  barMouseOut)
 		.on("mouseover", barHovered); 
 		
-	bars2.append("rect")
+	svg3.append("g")
+		.attr("class", "bars2")
+	.selectAll(".bar2")
+		.data(data2)
+	.enter().append("rect")
 		.attr("class", "bar2")
 		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
 		.attr("width", xDualBarChart.bandwidth()/2)
@@ -165,7 +200,7 @@ function drawDualBarChart(d1, d2) {
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
-		.on("mouseover", barHovered); 		
+		.on("mouseover", barHovered); 	
 }
 
 function drawScatterplot(d1, d2) {
@@ -173,11 +208,11 @@ function drawScatterplot(d1, d2) {
 	var data2 = [];
 	
 	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(d1[i])){
+		if(!isNaN(d1[i]) & d1[i] != null){
 			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
 			data1.push(item);
 		}
-		if(!isNaN(d2[i])){
+		if(!isNaN(d2[i]) & d2[i] != null){
 			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
 			data2.push(item);
 		}
@@ -246,38 +281,38 @@ function drawScatterplot(d1, d2) {
 
 }
 
-function getCountryData(c1, c2){
-	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
-	var growthArray = [];
-	for(i = StartYear; i < EndYear; i ++){
-		growthArray.push(+d[i + " [YR" + i + "]"]);
-	}
-  return {
-  	country_code : d["Country Code"],
-  	country_name: d["Country Name"],
-  	series_name: d["Series Name"],
-  	series_code: d["Series Code"],
-  	gdpGrowth : growthArray
-  };
-}, function(data){
-	var country1 = 0;
-	var country2 = 0;
-	data.forEach(function(element, i){
-		if(element.country_code === c1){
-			console.log(element);
-			//compare.push(element);
-			country1 = i;
-		} else if (element.country_code === c2){
-			console.log(element);
-			//compare.push(element);
-			country2 = i;
-		}
-	})
-	//console.log(data[country1].gdpGrowth);
-	drawScatterplot(data[country1].gdpGrowth, data[country2].gdpGrowth);
-	drawDualBarChart(data[country1].gdpGrowth, data[country2].gdpGrowth);
 
-});
+function visualizeData(c1, c2){
+	var TimeLength = EndYear - StartYear;
+	var data_1 = new Array(TimeLength);
+	var data_2 = new Array(TimeLength);
+	var hasData_1 = false;
+	var hasData_2 = false;
+
+	d3.json("resources/data.json", function(d) {
+
+	if(typeof d[c1] === 'undefined')
+		data_1.fill(null, 0, EndYear - StartYear)
+	else {
+		data_1 = d[c1][indicator_main];
+		hasData_1 = true;
+	}
+
+	if(typeof d[c2] === 'undefined')
+		data_2.fill(null, 0, EndYear - StartYear)
+	else {
+		data_2 = d[c2][indicator_main];
+		hasData_2 = true;
+	}
+
+	if(hasData_1 || hasData_2){
+		drawScatterplot(data_1, data_2);
+		drawDualBarChart(data_1, data_2);
+	} else {
+		//notify user no data
+		alert('No Data for selection.');
+	}
+	});
 }
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
@@ -407,29 +442,40 @@ function clicked(){
  	setSelected(this);
 }
 
-//max 2 selected
+//unselect countries and remove selected country styles
+function resetCountrySelection(){
+	selectedCountries.forEach(function(elem){
+		if(elem === null){
+		} else {
+			d3.select(elem).classed('selected_1', false);
+			d3.select(elem).classed('selected_2', false);
+			d3.select(elem).attr("stroke-width", 1/zoomk + "px");
+		}
+	})
+	selectedCountries = [null, null];
+	svg2.selectAll("g").remove();
+	svg3.selectAll("g").remove();
+}
+
+//behaviour: replace 2nd selection
 function setSelected(element){
 	if(selectedCountries[0] === element || selectedCountries[1] === element){
 		return;
 	}
-	//select the selection
-	if(selectedCountries[0] === null){
+	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
-	} else {
-		if(selectedCountries[1] !== null){ //unselect 3rd country
-			d3.select(selectedCountries[1]).attr('class', '');
+		d3.select(selectedCountries[0]).classed('selected_1', true);
+		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
+	} else {//if 1st country selected set 2nd selection
+		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
+			d3.select(selectedCountries[1]).classed('selected_2', false);
+			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
 		}
-		selectedCountries[1] = selectedCountries[0];
-		selectedCountries[0] = element;
-		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
+		selectedCountries[1] = element;
+		d3.select(selectedCountries[1]).classed('selected_2', true);
+		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	//put class selected on selection
-	selectedCountries.forEach(function(elem){
-		if(elem === null){
-		} else {
-			d3.select(elem).attr('class', 'selected');
-		}
-	})
 }
 
 function hovered(){
@@ -441,11 +487,20 @@ function hovered(){
 }
 
 function zoomed() {
+	zoomk = d3.event.transform.k;
+
 	d3.select("g").attr("transform", d3.event.transform);
 
 	//adjust the stroke width based on zoom level
-	d3.select("g").style("stroke-width", 1 / d3.event.transform.k);
-	
+	d3.selectAll("path").attr("stroke-width", 1 / zoomk);
+
+	//put class selected on selection
+	selectedCountries.forEach(function(elem){
+		if(elem === null){
+		} else {
+			d3.select(elem).attr("stroke-width", 5/zoomk + "px");
+		}
+	})
 }
 
 function setYear(y) {
@@ -507,8 +562,10 @@ function resize() {
 	xAxisDBC.scale(xDualBarChart);
 	yAxisDBC.scale(yDualBarChart);
 	
+
+	//2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
-		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 }
 

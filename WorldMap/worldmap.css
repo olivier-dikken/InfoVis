@@ -11,9 +11,12 @@ svg {
   background-color: white;
 }
 
-.selected {
-  fill: red;
-  fill-opacity: 1 !important;
+.selected_1 {
+  stroke: red;
+}
+
+.selected_2 {
+  stroke: blue;
 }
 
 .defaultCountry{
@@ -27,7 +30,6 @@ svg {
 .boundary {
   fill: #DEB887;
   stroke: black;
-  stroke-width: 1px; 
 }
 
 .hidden {
