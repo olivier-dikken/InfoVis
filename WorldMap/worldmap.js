@@ -3,8 +3,8 @@
 
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
-var StartYear = 1961;
-var EndYear = 2017;
+var StartYear = 1951;
+var EndYear = 2018;
 var CurrentYear = EndYear;
 var xArray = Array.range(StartYear, EndYear);
 
@@ -173,11 +173,11 @@ function drawScatterplot(d1, d2) {
 	var data2 = [];
 	
 	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(d1[i])){
+		if(!isNaN(d1[i]) & d1[i] != null){
 			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
 			data1.push(item);
 		}
-		if(!isNaN(d2[i])){
+		if(!isNaN(d2[i]) & d2[i] != null){
 			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
 			data2.push(item);
 		}
@@ -246,7 +246,7 @@ function drawScatterplot(d1, d2) {
 
 }
 
-function getCountryData(c1, c2){
+/* function getCountryData(c1, c2){
 	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
 	var growthArray = [];
 	for(i = StartYear; i < EndYear; i ++){
@@ -278,6 +278,15 @@ function getCountryData(c1, c2){
 	drawDualBarChart(data[country1].gdpGrowth, data[country2].gdpGrowth);
 
 });
+} */
+
+function getCountryData(c1, c2){
+	d3.json("resources/data.json", function(d) {
+	//console.log(d);
+	drawScatterplot(d[c1]["GDP growth (annual %)"], d[c2]["GDP growth (annual %)"]);
+	drawDualBarChart(d[c1]["GDP growth (annual %)"], d[c2]["GDP growth (annual %)"]);
+
+	});
 }
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
