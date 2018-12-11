@@ -1,0 +1,240 @@
+//bulk insert wbi data
+bulk insert dbo.gbdata
+from 'C:\git\InfoVis\WorldMap\resources\gdp_growth_cleaned.csv'
+with
+(
+datafiletype = 'char',
+firstrow=2,
+FIELDTERMINATOR=',',
+ROWTERMINATOR = '\n',
+TABLOCK
+);
+
+//create insert data tables
+
+//final data table
+create table dataset (Country varchar(10) not null, Indicator varchar(100) not null, "1951" int, "1952" int, "1953" int, "1954" int, "1955" int, "1956" int, "1957" int, "1958" int, "1959" int, "1960" int, "1961" int, "1962" int, "1963" int, "1964" int, "1965" int, "1966" int, "1967" int, "1968" int, "1969" int, "1970" int, "1971" int, "1972" int, "1973" int, "1974" int, "1975" int, "1976" int, "1977" int, "1978" int, "1979" int, "1980" int, "1981" int, "1982" int, "1983" int, "1984" int, "1985" int, "1986" int, "1987" int, "1988" int, "1989" int, "1990" int, "1991" int, "1992" int, "1993" int, "1994" int, "1995" int, "1996" int, "1997" int, "1998" int, "1999" int, "2000" int, "2001" int, "2002" int, "2003" int, "2004" int, "2005" int, "2006" int, "2007" int, "2008" int, "2009" int, "2010" int, "2011" int, "2012" int, "2013" int, "2014" int, "2015" int, "2016" int, "2017" int)
+
+//gbi bulk insert table
+create table gbdata (Country varchar(10) not null, Indicator varchar(100) not null, "1960" float, "1961" float, "1962" float, "1963" float, "1964" float, "1965" float, "1966" float, "1967" float, "1968" float, "1969" float, "1970" float, "1971" float, "1972" float, "1973" float, "1974" float, "1975" float, "1976" float, "1977" float, "1978" float, "1979" float, "1980" float, "1981" float, "1982" float, "1983" float, "1984" float, "1985" float, "1986" float, "1987" float, "1988" float, "1989" float, "1990" float, "1991" float, "1992" float, "1993" float, "1994" float, "1995" float, "1996" float, "1997" float, "1998" float, "1999" float, "2000" float, "2001" float, "2002" float, "2003" float, "2004" float, "2005" float, "2006" float, "2007" float, "2008" float, "2009" float, "2010" float, "2011" float, "2012" float, "2013" float, "2014" float, "2015" float, "2016" float, "2017" float)
+
+//add refugees totals to dataset
+  insert into dbo.dataset
+  select 
+  [Country]
+  , 'Refugees_Total' as Indicator
+      ,sum([1951]) as [1951]
+      ,sum([1952]) as [1952]
+      ,sum([1953]) as [1953]
+      ,sum([1954]) as [1954]
+      ,sum([1955]) as [1955]
+      ,sum([1956]) as [1956]
+      ,sum([1957]) as [1957]
+      ,sum([1958]) as [1958]
+      ,sum([1959]) as [1959]
+      ,sum([1960]) as [1960]
+      ,sum([1961]) as [1961]
+      ,sum([1962]) as [1962]
+      ,sum([1963]) as [1963]
+      ,sum([1964]) as [1964]
+      ,sum([1965]) as [1965]
+      ,sum([1966]) as [1966]
+      ,sum([1967]) as [1967]
+      ,sum([1968]) as [1968]
+      ,sum([1969]) as [1969]
+      ,sum([1970]) as [1970]
+      ,sum([1971]) as [1971]
+      ,sum([1972]) as [1972]
+      ,sum([1973]) as [1973]
+      ,sum([1974]) as [1974]
+      ,sum([1975]) as [1975]
+      ,sum([1976]) as [1976]
+      ,sum([1977]) as [1977]
+      ,sum([1978]) as [1978]
+      ,sum([1979]) as [1979]
+      ,sum([1980]) as [1980]
+      ,sum([1981]) as [1981]
+      ,sum([1982]) as [1982]
+      ,sum([1983]) as [1983]
+      ,sum([1984]) as [1984]
+      ,sum([1985]) as [1985]
+      ,sum([1986]) as [1986]
+      ,sum([1987]) as [1987]
+      ,sum([1988]) as [1988]
+      ,sum([1989]) as [1989]
+      ,sum([1990]) as [1990]
+      ,sum([1991]) as [1991]
+      ,sum([1992]) as [1992]
+      ,sum([1993]) as [1993]
+      ,sum([1994]) as [1994]
+      ,sum([1995]) as [1995]
+      ,sum([1996]) as [1996]
+      ,sum([1997]) as [1997]
+      ,sum([1998]) as [1998]
+      ,sum([1999]) as [1999]
+      ,sum([2000]) as [2000]
+      ,sum([2001]) as [2001]
+      ,sum([2002]) as [2002]
+      ,sum([2003]) as [2003]
+      ,sum([2004]) as [2004]
+      ,sum([2005]) as [2005]
+      ,sum([2006]) as [2006]
+      ,sum([2007]) as [2007]
+      ,sum([2008]) as [2008]
+      ,sum([2009]) as [2009]
+      ,sum([2010]) as [2010]
+      ,sum([2011]) as [2011]
+      ,sum([2012]) as [2012]
+      ,sum([2013]) as [2013]
+      ,sum([2014]) as [2014]
+      ,sum([2015]) as [2015]
+      ,sum([2016]) as [2016]
+      ,sum([2017]) as [2017]
+  from dbo.dataset 
+  where Indicator like 'Refugees%'
+  group by Country
+
+
+//insert gdp growth data in dbo.dataset
+insert into dbo.dataset 
+  select Country, Indicator, null as '1951',null as '1952',null as '1953', null as '1954',null as '1955',null as '1956',null as '1957',null as '1958',null as '1959',[1960]
+      ,[1961]
+      ,[1962]
+      ,[1963]
+      ,[1964]
+      ,[1965]
+      ,[1966]
+      ,[1967]
+      ,[1968]
+      ,[1969]
+      ,[1970]
+      ,[1971]
+      ,[1972]
+      ,[1973]
+      ,[1974]
+      ,[1975]
+      ,[1976]
+      ,[1977]
+      ,[1978]
+      ,[1979]
+      ,[1980]
+      ,[1981]
+      ,[1982]
+      ,[1983]
+      ,[1984]
+      ,[1985]
+      ,[1986]
+      ,[1987]
+      ,[1988]
+      ,[1989]
+      ,[1990]
+      ,[1991]
+      ,[1992]
+      ,[1993]
+      ,[1994]
+      ,[1995]
+      ,[1996]
+      ,[1997]
+      ,[1998]
+      ,[1999]
+      ,[2000]
+      ,[2001]
+      ,[2002]
+      ,[2003]
+      ,[2004]
+      ,[2005]
+      ,[2006]
+      ,[2007]
+      ,[2008]
+      ,[2009]
+      ,[2010]
+      ,[2011]
+      ,[2012]
+      ,[2013]
+      ,[2014]
+      ,[2015]
+      ,[2016]
+      ,[2017]
+	  from dbo.gbdata
+	  where
+not (
+[1960] is null
+and [1961] is null
+and [1962] is null
+and [1963] is null
+and [1964] is null
+and [1965] is null
+and [1966] is null
+and [1967] is null
+and [1968] is null
+and [1969] is null
+and [1970] is null
+and [1971] is null
+and [1972] is null
+and [1973] is null
+and [1974] is null
+and [1975] is null
+and [1976] is null
+and [1977] is null
+and [1978] is null
+and [1979] is null
+and [1980] is null
+and [1981] is null
+and [1982] is null
+and [1983] is null
+and [1984] is null
+and [1985] is null
+and [1986] is null
+and [1987] is null
+and [1988] is null
+and [1989] is null
+and [1990] is null
+and [1991] is null
+and [1992] is null
+and [1993] is null
+and [1994] is null
+and [1995] is null
+and [1996] is null
+and [1997] is null
+and [1998] is null
+and [1999] is null
+and [2000] is null
+and [2001] is null
+and [2002] is null
+and [2003] is null
+and [2004] is null
+and [2005] is null
+and [2006] is null
+and [2007] is null
+and [2008] is null
+and [2009] is null
+and [2010] is null
+and [2011] is null
+and [2012] is null
+and [2013] is null
+and [2014] is null
+and [2015] is null
+and [2016] is null
+and [2017] is null
+)
+
+
+
+
+//update country name to ISO3 format and change 'Various/Unknown' label to 'Na'
+
+update [InfoVis_v1].[dbo].[unhcr_popstats]
+set Country = ic.ISO3
+from [dbo].[unhcr_popstats] up
+join [dbo].[ISO_Codes] ic
+on ic.CountryName = up.Country
+
+update [InfoVis_v1].[dbo].[unhcr_popstats]
+set Origin = ic.ISO3
+from [dbo].[unhcr_popstats] up
+join [dbo].[ISO_Codes] ic
+on ic.CountryName = up.Origin
+
+update [InfoVis_v1].[dbo].[unhcr_popstats]
+set Origin = 'Na'
+where Origin = 'Various/Unknown'
