@@ -401,7 +401,7 @@ function hovered(){
 function zoomed() {
 	zoomk = d3.event.transform.k;
 
-	d3.select("g").attr("transform", zoom);
+	d3.select("g").attr("transform", d3.event.transform);
 
 	//adjust the stroke width based on zoom level
 	d3.selectAll("path").attr("stroke-width", 1 / zoomk);
