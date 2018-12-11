@@ -14,7 +14,7 @@ for key, value in group.items():
     data[key] = dict
 
 with open("data.json", 'w') as fp:
-    json.dump(data, fp, sort_keys=True, indent=4)
+    json.dump(data, fp, sort_keys=True)
 
 
 
