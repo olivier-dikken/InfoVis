@@ -121,8 +121,6 @@ function drawDualBarChart(d1, d2) {
 	yDualBarChart.domain(yExtent).nice();
 	
 	svg3.selectAll("g").remove();
-	svg3.selectAll(".bar1").remove();
-	svg3.selectAll(".bar2").remove();
 	
 	svg3.append("g")
 		.attr("class", "x axis")
@@ -140,10 +138,11 @@ function drawDualBarChart(d1, d2) {
 		.style("text-anchor", "end")
 		.text("GDP growth");
 		
-	bars1 = svg3.selectAll(".bar1").data(data1).enter();
-	bars2 = svg3.selectAll(".bar2").data(data2).enter();
-	
-	bars1.append("rect")
+	svg3.append("g")
+		.attr("class", "bars1")
+	.selectAll(".bar1")
+		.data(data1)
+	.enter().append("rect")
 		.attr("class", "bar1")
 		.attr("x", function(d) { return xDualBarChart(d.year); })
 		.attr("width", xDualBarChart.bandwidth()/2)
@@ -156,7 +155,11 @@ function drawDualBarChart(d1, d2) {
 		.on("mouseout",  barMouseOut)
 		.on("mouseover", barHovered); 
 		
-	bars2.append("rect")
+	svg3.append("g")
+		.attr("class", "bars2")
+	.selectAll(".bar2")
+		.data(data2)
+	.enter().append("rect")
 		.attr("class", "bar2")
 		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
 		.attr("width", xDualBarChart.bandwidth()/2)
@@ -165,7 +168,7 @@ function drawDualBarChart(d1, d2) {
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
-		.on("mouseover", barHovered); 		
+		.on("mouseover", barHovered); 	
 }
 
 function drawScatterplot(d1, d2) {
@@ -329,9 +332,6 @@ function resetCountrySelection(){
 	selectedCountries = [null, null];
 	svg2.selectAll("g").remove();
 	svg3.selectAll("g").remove();
-	//remove bars separately (not children of svg3)
-	svg3.selectAll(".bar1").remove();
-	svg3.selectAll(".bar2").remove();
 }
 
 //behaviour: replace 2nd selection
