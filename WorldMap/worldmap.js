@@ -16,11 +16,15 @@ var width = viewWidth - margin.left - margin.right;
 var height = viewHeight - margin.top - margin.bottom;
 var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 
+
+
 //WorldMap variables
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
 	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
+//init global zoom variables
+var zoomk = 1;
 		
 //offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -251,32 +255,39 @@ function drawScatterplot(d1, d2) {
 
 
 function visualizeData(c1, c2){
-	var variable_main = "Refugees_Total";
-	var variable_secondary = "GDP growth (annual %)";
-	d3.json("resources/data.json", function(d) {
-	console.log("d[c1] d[c2]");
-	console.log(d[c1]);
-	console.log(d[c2]);
+	//test data, rm when globall main and secondary indicator variables are set
+	var indicator_main = "Refugees_Total";
+	var indicator_secondary = "GDP growth (annual %)";
+
 	var TimeLength = EndYear - StartYear;
 	var data_1 = new Array(TimeLength);
 	var data_2 = new Array(TimeLength);
+	var hasData_1 = false;
+	var hasData_2 = false;
+
+	d3.json("resources/data.json", function(d) {
 
 	if(typeof d[c1] === 'undefined')
 		data_1.fill(null, 0, EndYear - StartYear)
-	else
-		data_1 = d[c1][variable_main];
+	else {
+		data_1 = d[c1][indicator_main];
+		hasData_1 = true;
+	}
 
 	if(typeof d[c2] === 'undefined')
 		data_2.fill(null, 0, EndYear - StartYear)
-	else
-		data_2 = d[c2][variable_main];
+	else {
+		data_2 = d[c2][indicator_main];
+		hasData_2 = true;
+	}
 
-	console.log("data_1 data_2");
-	console.log(data_1);
-	console.log(data_2);
-
-	drawScatterplot(data_1, data_2);
-	drawDualBarChart(data_1, data_2);
+	if(hasData_1 || hasData_2){
+		drawScatterplot(data_1, data_2);
+		drawDualBarChart(data_1, data_2);
+	} else {
+		//notify user no data
+		alert('No Data for selection.');
+	}
 	});
 }
 
@@ -348,8 +359,9 @@ function resetCountrySelection(){
 	selectedCountries.forEach(function(elem){
 		if(elem === null){
 		} else {
-			d3.select(elem).attr('class', '');
-			//d3.select(elem).style("stroke-width", "1px");
+			d3.select(elem).classed('selected_1', false);
+			d3.select(elem).classed('selected_2', false);
+			d3.select(elem).attr("stroke-width", 1/zoomk + "px");
 		}
 	})
 	selectedCountries = [null, null];
@@ -364,14 +376,16 @@ function setSelected(element){
 	}
 	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
-		d3.select(selectedCountries[0]).attr('class', 'selected_1');
+		d3.select(selectedCountries[0]).classed('selected_1', true);
+		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
 	} else {//if 1st country selected set 2nd selection
 		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
-			d3.select(selectedCountries[1]).attr('class', '');
-			//d3.select(selectedCountries[1]).style("stroke-width", "1px");
+			d3.select(selectedCountries[1]).classed('selected_2', false);
+			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
 		}
 		selectedCountries[1] = element;
-		d3.select(selectedCountries[1]).attr('class', 'selected_2');
+		d3.select(selectedCountries[1]).classed('selected_2', true);
+		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 }
@@ -385,18 +399,20 @@ function hovered(){
 }
 
 function zoomed() {
-	d3.select("g").attr("transform", d3.event.transform);
+	zoomk = d3.event.transform.k;
+
+	d3.select("g").attr("transform", zoom);
 
 	//adjust the stroke width based on zoom level
-	d3.select("g").style("stroke-width", 1 / d3.event.transform.k);
+	d3.selectAll("path").attr("stroke-width", 1 / zoomk);
+
 	//put class selected on selection
 	selectedCountries.forEach(function(elem){
 		if(elem === null){
 		} else {
-			d3.select(elem).style("stroke-width", 5/d3.event.transform.k + "px");
+			d3.select(elem).attr("stroke-width", 5/zoomk + "px");
 		}
 	})
-	
 }
 
 function setYear(y) {
