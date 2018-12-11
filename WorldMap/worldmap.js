@@ -251,9 +251,32 @@ function drawScatterplot(d1, d2) {
 
 
 function visualizeData(c1, c2){
+	var variable_main = "Refugees_Total";
+	var variable_secondary = "GDP growth (annual %)";
 	d3.json("resources/data.json", function(d) {
-	drawScatterplot(d[c1]["Refugees_Total"], d[c2]["GDP growth (annual %)"]);
-	drawDualBarChart(d[c1]["GDP growth (annual %)"], d[c2]["GDP growth (annual %)"]);
+	console.log("d[c1] d[c2]");
+	console.log(d[c1]);
+	console.log(d[c2]);
+	var TimeLength = EndYear - StartYear;
+	var data_1 = new Array(TimeLength);
+	var data_2 = new Array(TimeLength);
+
+	if(typeof d[c1] === 'undefined')
+		data_1.fill(null, 0, EndYear - StartYear)
+	else
+		data_1 = d[c1][variable_main];
+
+	if(typeof d[c2] === 'undefined')
+		data_2.fill(null, 0, EndYear - StartYear)
+	else
+		data_2 = d[c2][variable_main];
+
+	console.log("data_1 data_2");
+	console.log(data_1);
+	console.log(data_2);
+
+	drawScatterplot(data_1, data_2);
+	drawDualBarChart(data_1, data_2);
 	});
 }
 
