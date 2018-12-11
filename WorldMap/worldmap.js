@@ -5,7 +5,7 @@ Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + 
 
 var StartYear = 1951;
 var EndYear = 2018;
-var CurrentYear = EndYear;
+var CurrentYear = EndYear - 1;
 var xArray = Array.range(StartYear, EndYear);
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40};
@@ -15,8 +15,6 @@ var viewHeight = window.innerHeight - (margin.bottom);
 var width = viewWidth - margin.left - margin.right;
 var height = viewHeight - margin.top - margin.bottom;
 var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
-
-
 
 //WorldMap variables
 var zoom = d3.zoom()
@@ -266,7 +264,7 @@ function visualizeData(c1, c2){
 	var hasData_2 = false;
 
 	d3.json("resources/data.json", function(d) {
-
+	
 	if(typeof d[c1] === 'undefined')
 		data_1.fill(null, 0, EndYear - StartYear)
 	else {
@@ -281,9 +279,14 @@ function visualizeData(c1, c2){
 		hasData_2 = true;
 	}
 
+	var mainindicators = {};
+	Object.keys(d).map(function(c) { mainindicators[c] = d[c][indicator_main] });
+	//console.log(mainindicators);
+	
 	if(hasData_1 || hasData_2){
 		drawScatterplot(data_1, data_2);
 		drawDualBarChart(data_1, data_2);
+		colorWorldMap(mainindicators);
 	} else {
 		//notify user no data
 		alert('No Data for selection.');
@@ -292,6 +295,17 @@ function visualizeData(c1, c2){
 }
 
 var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
+
+function colorWorldMap(data) {
+	paths = Array.prototype.slice.call(svg1.select("g.boundary")._groups[0][0].children);
+	var maxvalue = 3500000;
+	paths.forEach(function(elem) { 
+		if(typeof data[elem.id] === 'undefined') {
+		} else {
+			d3.select(elem).attr("style", "fill-opacity: " + data[elem.id][CurrentYear - StartYear]/maxvalue)
+		}
+	});
+}
 
 function drawWorldMap() {
 	var viewWidth = window.innerWidth / 2 - margin.right;
