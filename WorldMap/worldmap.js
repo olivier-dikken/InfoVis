@@ -1,4 +1,12 @@
+// World Map inspired by http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
+// Dual bar chart inspired by https://github.com/liufly/Dual-scale-D3-Bar-Chart and https://bl.ocks.org/mbostock/2368837
+
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
+
+var StartYear = 1961;
+var EndYear = 2017;
+var CurrentYear = EndYear;
+var xArray = Array.range(StartYear, EndYear);
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40};
 var viewWidth = window.innerWidth / 2 - (margin.right + 1);
@@ -8,36 +16,13 @@ var width = viewWidth - margin.left - margin.right;
 var height = viewHeight - margin.top - margin.bottom;
 var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 
+//WorldMap variables
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
 	 .translateExtent([[0, 0], [width, height]])
 	 .on("zoom", zoomed);
-
-var svg1 = d3.select("#map").append("svg")
-	.attr("id", "svg1")
-	.attr("width", viewWidth)
-	.attr("height", viewHeight)
-	.call(zoom);
-
-d3.select("#comparison").append("svg")
-	.attr("id", "svg2")
-	.attr("width", viewWidth)
-	.attr("height", viewHeight/2-1);	
-
-d3.select("#versus").append("svg")
-	.attr("id", "svg3")
-	.attr("width", viewWidth)
-	.attr("height", viewHeight/2-1);	
-
-var svg2 = d3.select("#svg2")
-	.append("g")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-var svg3 = d3.select("#svg3")
-	.append("g")
-		.attr("transform", "translate(" + margin.left + "," + (margin.top + viewHeight/2) + ")");
 		
-//for tooltip 
+//offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
 var offsetT = d3.select("#map").node().offsetTop+10;
 
@@ -47,6 +32,13 @@ var tooltip = d3.select("#map")
 
 var selectedCountries = new Array(null, null);
 
+var svg1 = d3.select("#map").append("svg")
+	.attr("id", "svg1")
+	.attr("width", viewWidth)
+	.attr("height", viewHeight)
+	.call(zoom);
+	
+//Scatterpot variables
 var x = d3.scaleLinear()
     .range([0, width]);
 
@@ -58,28 +50,127 @@ var y1 = d3.scaleLinear()
 var y2 = d3.scaleLinear()
 	.range([halfHeight, 0])
 
-var colors = ["blue", "red"];
-var color = d3.scaleLinear()
-    .range(colors);
-
 var xAxis = d3.axisBottom()
     .scale(x);
 
 var yAxis1 = d3.axisLeft()
     .scale(y1);
 
-//half height
 var yAxis2 = d3.axisLeft()
 	.scale(y2);
 
-var xValue = "x";
-var yValue = "y";
-var colorValue = "a";
+d3.select("#comparison").append("svg")
+	.attr("id", "svg2")
+	.attr("width", viewWidth)
+	.attr("height", viewHeight/2-1);	
+
+var svg2 = d3.select("#svg2")
+	.append("g")
+		.attr("class", "scatterplot")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+//Dual bar chart variables
+var xDualBarChart = d3.scaleBand()
+    .rangeRound([0, width])
+    .padding(0.1);
+
+var yDualBarChart = d3.scaleLinear().range([halfHeight, 0]);
+
+var xAxisDBC = d3.axisBottom()
+    .scale(xDualBarChart)
+	.tickValues(xArray.filter(function(d,i){ return !((i+1)%5)})); // One tick value for each 5 years
+	
+var yAxisDBC = d3.axisLeft()
+	.scale(yDualBarChart)
+	.ticks(4);
+
+d3.select("#versus").append("svg")
+	.attr("id", "svg3")
+	.attr("width", viewWidth)
+	.attr("height", viewHeight/2-1);	
+	
+var svg3 = d3.select("#svg3")
+	.append("g")
+		.attr("class", "dual bar chart")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+function drawDualBarChart(d1, d2) {
+	//console.log("d1: " + d1);
+	//console.log("d2: " + d2);
+	var data1 = [];
+	var data2 = [];
+	
+	for (var i = 0; i < d1.length; i++) {
+		if(!isNaN(d1[i])){
+			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
+			data1.push(item);
+		}
+		if(!isNaN(d2[i])){
+			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
+			data2.push(item);
+		}
+	}
+
+	//var xExtent = d3.extent(xArray, function(d) { return d; });
+	var xExtent = xArray.map(function(d) { return d; });
+	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
+
+	//xDualBarChart.domain(xExtent).nice(); // gives an error
+	xDualBarChart.domain(xExtent);
+	yDualBarChart.domain(yExtent).nice();
+	
+	svg3.selectAll("g").remove();
+	svg3.selectAll(".bar1").remove();
+	svg3.selectAll(".bar2").remove();
+	
+	svg3.append("g")
+		.attr("class", "x axis")
+		//.attr("transform", "translate(0," + halfHeight + ")")
+		.attr("transform", "translate(0," + yDualBarChart(0) + ")")
+		.call(xAxisDBC);
+	svg3.append("g")
+		.attr("class", "y axis axisLeft")
+		.attr("transform", "translate(0,0)")
+		.call(yAxisDBC)
+	.append("text")
+		.attr("y", 6)
+		.attr("dy", "-2em")
+		.style("text-anchor", "end")
+		.style("text-anchor", "end")
+		.text("GDP growth");
+		
+	bars1 = svg3.selectAll(".bar1").data(data1).enter();
+	bars2 = svg3.selectAll(".bar2").data(data2).enter();
+	
+	bars1.append("rect")
+		.attr("class", "bar1")
+		.attr("x", function(d) { return xDualBarChart(d.year); })
+		.attr("width", xDualBarChart.bandwidth()/2)
+		//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
+		//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
+		.attr("year", function(d) { return d.year; })
+		.on("click", function(d) { setYear(d.year) })
+		.on("mouseout",  barMouseOut)
+		.on("mouseover", barHovered); 
+		
+	bars2.append("rect")
+		.attr("class", "bar2")
+		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
+		.attr("width", xDualBarChart.bandwidth()/2)
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
+		.attr("year", function(d) { return d.year; })
+		.on("click", function(d) { setYear(d.year) })
+		.on("mouseout",  barMouseOut)
+		.on("mouseover", barHovered); 		
+}
 
 function drawScatterplot(d1, d2) {
 	var data1 = [];
 	var data2 = [];
-	var xArray = Array.range(1961, 2017);
 	
 	for (var i = 0; i < d1.length; i++) {
 		if(!isNaN(d1[i])){
@@ -93,7 +184,8 @@ function drawScatterplot(d1, d2) {
 	}
 
 	var xExtent = d3.extent(xArray, function(d) { return d; });
-	var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
 
 	x.domain(xExtent).nice();
 	y1.domain(yExtent).nice();
@@ -154,9 +246,6 @@ function drawScatterplot(d1, d2) {
 
 }
 
-var StartYear = 1961;
-var EndYear = 2017
-
 function getCountryData(c1, c2){
 	d3.csv("resources/c5fe9392-8421-43cc-b646-6b2d7879c3d8_Data.csv", function(d) {
 	var growthArray = [];
@@ -186,6 +275,7 @@ function getCountryData(c1, c2){
 	})
 	//console.log(data[country1].gdpGrowth);
 	drawScatterplot(data[country1].gdpGrowth, data[country2].gdpGrowth);
+	drawDualBarChart(data[country1].gdpGrowth, data[country2].gdpGrowth);
 
 });
 }
@@ -286,14 +376,26 @@ function hovered(){
 	d3.select(this).classed('hovered', true);
 }
 
-
-
 function zoomed() {
 	d3.select("g").attr("transform", d3.event.transform);
 
 	//adjust the stroke width based on zoom level
 	d3.select("g").style("stroke-width", 1 / d3.event.transform.k);
 	
+}
+
+function setYear(y) {
+ 	console.log("Selected year is set to: " + y);
+	CurrentYear = y;
+}
+
+function barHovered() {
+	d3.select(this).classed('barhovered', true);
+}
+
+function barMouseOut() {
+	//unhover
+ 	d3.select(this).classed('barhovered', false);
 }
 
 function resize() {
@@ -325,6 +427,7 @@ function resize() {
 	height = viewHeight - margin.top - margin.bottom;
 	halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
 	
+	//Scatterplot axes
 	x.range([0, width]);
 	y1.range([halfHeight, 0]);
 	y2.range([halfHeight, 0]);
@@ -332,7 +435,14 @@ function resize() {
 	xAxis.scale(x);
 	yAxis1.scale(y1);
 	yAxis2.scale(y2);
-  
+	
+	//Dual bar chart axes
+	xDualBarChart.rangeRound([0, width]);
+	yDualBarChart.range([halfHeight, 0]);
+	
+	xAxisDBC.scale(xDualBarChart);
+	yAxisDBC.scale(yDualBarChart);
+	
 	if (selectedCountries[1] !== null) {
 		getCountryData(selectedCountries[0].id, selectedCountries[1].id);
 	}
