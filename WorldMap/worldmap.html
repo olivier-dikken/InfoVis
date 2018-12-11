@@ -9,8 +9,17 @@
 		<script src="topojson.v3.min.js"></script>
     </head>
     <body>
-    	<div id="ButtonPanel">
+    	<div id="TopPanel" style="display: flex; align-items: center;">
     		<button onclick="resetCountrySelection()">Reset</button>
+    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
+    		<div style="margin-left: 10px; display: flex; align-items: center;">
+    			<p>Primary Indicator:</p>
+    			<p id="indicator_primary">_</p>
+    		</div>
+    		<div style="margin-left: 10px; display: flex; align-items: center;">
+    			<p>Secondary Indicator:</p>
+    			<p id="indicator_secondary">_</p>
+    		</div>
     	</div>
         <div id="map" style="float:left;"></div>
         <div id="rightPanel" style="float:right">
