@@ -3,6 +3,20 @@
 
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
+
+//init options
+var indicatorList = ["Refugees_Total", "GDP growth (annual %)"];
+var indicator_main = "Refugees_Total";
+var indicator_secondary = "GDP growth (annual %)";
+//fill select list
+var selectPrimary = document.getElementById("select_indicator_primary");
+indicatorList.forEach(function(element){
+	var option = document.createElement("option"); 
+	option.text = element;
+	selectPrimary.add(option);
+});
+
+//init config
 var StartYear = 1951;
 var EndYear = 2018;
 var CurrentYear = EndYear;
@@ -97,6 +111,20 @@ var svg3 = d3.select("#svg3")
 	.append("g")
 		.attr("class", "dual bar chart")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+function updatePrimaryIndicator(){
+	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
+	if(newIndicatorName == indicator_main){
+		console.log("This indicator is already set as primary indicator.")
+		return;
+	}
+	//if newindicator exists display in html and set indicator_main
+	if(indicatorList.includes(newIndicatorName)){
+		document.getElementById("indicator_primary").innerHTML = newIndicatorName;
+		indicator_main = newIndicatorName;
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
+}
 		
 function drawDualBarChart(d1, d2) {
 	//console.log("d1: " + d1);
@@ -255,10 +283,6 @@ function drawScatterplot(d1, d2) {
 
 
 function visualizeData(c1, c2){
-	//test data, rm when globall main and secondary indicator variables are set
-	var indicator_main = "Refugees_Total";
-	var indicator_secondary = "GDP growth (annual %)";
-
 	var TimeLength = EndYear - StartYear;
 	var data_1 = new Array(TimeLength);
 	var data_2 = new Array(TimeLength);
