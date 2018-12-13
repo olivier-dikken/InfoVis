@@ -275,12 +275,11 @@ function drawScatterplot(d1, d2) {
 	
 	Object.keys(d1).map(function(c) { 
 		if(!isNaN(d1[c]) && d1[c] != null && !isNaN(d2[c]) && d2[c] != null) {
-			var item = {indicator_primary: d1[c], indicator_secondary: d2[c]};
+			var item = {indicator_primary: d1[c], indicator_secondary: d2[c], ISO_code: c};
 			data.push(item);
 		}
 	});
 	
-	console.log(data);
 	var xExtent = d3.extent(Object.values(d1), function(d) { return d; });
 	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
 	var yExtent = d3.extent(Object.values(d2), function(d) { return d; });
@@ -322,11 +321,15 @@ function drawScatterplot(d1, d2) {
 		.data(data)
     .enter().append("circle")
 		.attr("class", "dot")
-		.attr("r", 3.5)
-		.attr("cx", function(d) { return x(d.indicator_secondary); })
-		.attr("cy", function(d) { return y(d.indicator_primary); })
+		.attr("r", dotRadius)
+		.attr("cx", function(d) { return x(d.indicator_primary); })
+		.attr("cy", function(d) { return y(d.indicator_secondary); })
+		.attr("countryCode", function(d) { return d.ISO_code; })
+		.attr("class", colorDots)
+		.on("mousemove", showDotTooltip)
+		.on("mouseover", hovered)
+		.on("mouseout",  mouseOut);
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
-
 }
 
 
@@ -341,12 +344,11 @@ function visualizeData(c1, c2){
 
 	var primaryindicators = {};
 	var secondaryindicators = {};
+
 	Object.keys(d).map(function(c) { 
 		if (d[c][indicator_primary] != undefined) {
 			primaryindicators[c] = d[c][indicator_primary][CurrentYear - StartYear]
 		}
-	});
-	Object.keys(d).map(function(c) { 
 		if (d[c][indicator_secondary] != undefined) {
 			secondaryindicators[c] = d[c][indicator_secondary][CurrentYear - StartYear]
 		}
@@ -437,11 +439,8 @@ for(var i = 0; i < 6; i++){
   .attr("x", 50)
   .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
   .text(function(d, i){ return intervals[i]; });
-
-
-
-	
 }
+
 function colorScale(d){	
 	var countryCode = d.id
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
@@ -464,6 +463,32 @@ function colorScale(d){
 	
 }
 	
+function colorDots(d) { 
+	if (d.ISO_code == selectedCountries[0].id) {
+		return "dotscountry1";
+	} else if (d.ISO_code == selectedCountries[1].id) {
+		return "dotscountry2";
+	} else {
+		return "";
+	}
+}
+
+function dotRadius(d) { 
+	if (d.ISO_code == selectedCountries[0].id || d.ISO_code == selectedCountries[1].id) {
+		return 7;
+	} else {
+		return 3.5;
+	}
+}
+		
+function showDotTooltip(d) {
+  label = d.ISO_code;
+  var mouse = d3.mouse(svgScatter.node())
+	.map(function(d) { return parseInt(d); } );
+  tooltip.classed("hidden", false)
+	.attr("style", "left:"+(mouse[0]+halfWidth+svgMargin.left+margin.left+offsetL)+"px;top:"+(mouse[1]+halfHeight+svgMargin.top+offsetT)+"px")
+	.html(label);
+}
 
 function showTooltip(d) {
   label = d.properties.name;
