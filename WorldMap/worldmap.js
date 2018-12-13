@@ -379,26 +379,44 @@ function drawWorldMap() {
 				.style("fill", colorScale);	
 						
 	});
+	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
+var intervals = []
+ 
+for(var i = 0; i < 6; i++){
+	var limit = (500000) * i;
+	intervals.push(limit);
+}
+	// Adding legend to map
+	var legend = g.selectAll("g.legend")
+  .data(intervals)
+  .enter().append("g")
+  .attr("class", "legend");
 
-	var legend = svg.append("g")
-  .attr("class", "legend")
-  .attr("x", w - 65)
-  .attr("y", 25)
-  .attr("height", 100)
-  .attr("width", 100);
+  
+  var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
+  var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+  var ls_w = 20, ls_h = 20; var height = 200;
+  legend.append("rect")
+  .attr("x", 20)
+  .attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
+  .attr("width", ls_w)
+  .attr("height", ls_h)
+  .style("fill", function(d, i) { return colorsFunction(d); })
+  .style("opacity", 0.8);
 
-  legend.append()
+  legend.append("text")
+  .attr("x", 50)
+  .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
+  .text(function(d, i){ return intervals[i]; });
+
+
+
+	
 }
 function colorScale(d){	
 	var countryCode = d.id
-	colors = [
-		'#7DB22E',
-		'#D4A10F',
-		'#F97C20',
-		'#F35F40',
-		'#FF0000'
-];
-	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(colors);			
+	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
+	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
 	// 66 is year 2017
 	var year = 66;
 	if(countryData[countryCode]){
