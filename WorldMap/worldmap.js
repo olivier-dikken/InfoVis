@@ -5,16 +5,16 @@ Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + 
 
 
 //init options
-var indicatorList = ["Refugees_Total", "GDP growth (annual %)"];
-var indicator_main = "Refugees_Total";
-var indicator_secondary = "GDP growth (annual %)";
-//fill select list
-var selectPrimary = document.getElementById("select_indicator_primary");
-indicatorList.forEach(function(element){
-	var option = document.createElement("option"); 
-	option.text = element;
-	selectPrimary.add(option);
-});
+var indicator_primary = "";
+var indicator_secondary = "";
+var indicatorList = ["Refugees_Total", "GDP growth (annual %)", "GDP per capita (current US$)", "Population density (people per sq. km of land area)", "Population growth (annual %)"];
+var selectPrimary;
+var selectSecondary;
+var selectedCountries = [null, null];
+//add options to drowdowns
+initOptions(indicatorList);
+
+
 
 //init config
 var StartYear = 1951;
@@ -22,20 +22,28 @@ var EndYear = 2018;
 var CurrentYear = EndYear;
 var xArray = Array.range(StartYear, EndYear);
 
-var margin = {top: 20, right: 20, bottom: 30, left: 40};
-var viewWidth = window.innerWidth / 2 - (margin.right + 1);
-var viewHeight = window.innerHeight - (margin.bottom);
 
-var width = viewWidth - margin.left - margin.right;
-var height = viewHeight - margin.top - margin.bottom;
-var halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
+//view settings
+//TopPanel height is hardcoded in css to 80px
+var TopPanelHeight = 80;
+var margin = {top: TopPanelHeight, right: 20, bottom: 30, left: 40};
+var svgMargin = {top: 30, right: 30, bottom: 50, left: 80};
+var viewWidth = window.innerWidth - (margin.right + margin.left);
+var viewHeight = window.innerHeight - (margin.bottom + margin.top);
+
+var halfWidth = viewWidth/2 - 1;
+var halfHeight = viewHeight/2 - 1;
+
+var svgInnerHalfWidth = halfWidth - (svgMargin.left + svgMargin.right);
+var svgInnerFullHeight = viewHeight - (svgMargin.top + svgMargin.bottom);
+var svgInnerHalfHeight = halfHeight - (svgMargin.top + svgMargin.bottom);
 
 
 
 //WorldMap variables
 var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
-	 .translateExtent([[0, 0], [width, height]])
+	 .translateExtent([[0, 0], [svgInnerHalfWidth, svgInnerFullHeight]])
 	 .on("zoom", zoomed);
 //init global zoom variables
 var zoomk = 1;
@@ -48,25 +56,23 @@ var tooltip = d3.select("#map")
 	 .append("div")
 	 .attr("class", "tooltip hidden");
 
-var selectedCountries = new Array(null, null);
-
-var svg1 = d3.select("#map").append("svg")
-	.attr("id", "svg1")
-	.attr("width", viewWidth)
+var svgMap = d3.select("#map").append("svg")
+	.attr("id", "svgMap")
+	.attr("width", halfWidth)
 	.attr("height", viewHeight)
 	.call(zoom);
 	
 //Scatterpot variables
 var x = d3.scaleLinear()
-    .range([0, width]);
+    .range([0, svgInnerHalfWidth]);
 
 //half height
 var y1 = d3.scaleLinear()
-    .range([halfHeight, 0]);
+    .range([svgInnerHalfHeight, 0]);
 
 //half height
 var y2 = d3.scaleLinear()
-	.range([halfHeight, 0])
+	.range([svgInnerHalfHeight, 0])
 
 var xAxis = d3.axisBottom()
     .scale(x);
@@ -78,21 +84,21 @@ var yAxis2 = d3.axisLeft()
 	.scale(y2);
 
 d3.select("#comparison").append("svg")
-	.attr("id", "svg2")
-	.attr("width", viewWidth)
-	.attr("height", viewHeight/2-1);	
+	.attr("id", "svgScatter")
+	.attr("width", halfWidth)
+	.attr("height", halfHeight);	
 
-var svg2 = d3.select("#svg2")
+var svgScatter = d3.select("#svgScatter")
 	.append("g")
 		.attr("class", "scatterplot")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		.attr("transform", "translate(" + svgMargin.left + "," + svgMargin.top + ")");
 		
 //Dual bar chart variables
 var xDualBarChart = d3.scaleBand()
-    .rangeRound([0, width])
+    .rangeRound([0, svgInnerHalfWidth])
     .padding(0.1);
 
-var yDualBarChart = d3.scaleLinear().range([halfHeight, 0]);
+var yDualBarChart = d3.scaleLinear().range([svgInnerHalfHeight, 0]);
 
 var xAxisDBC = d3.axisBottom()
     .scale(xDualBarChart)
@@ -103,26 +109,94 @@ var yAxisDBC = d3.axisLeft()
 	.ticks(4);
 
 d3.select("#versus").append("svg")
-	.attr("id", "svg3")
-	.attr("width", viewWidth)
-	.attr("height", viewHeight/2-1);	
+	.attr("id", "svgComparison")
+	.attr("width", halfWidth)
+	.attr("height", halfHeight);	
 	
-var svg3 = d3.select("#svg3")
+var svgComparison = d3.select("#svgComparison")
 	.append("g")
 		.attr("class", "dual bar chart")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		.attr("transform", "translate(" + svgMargin.left + "," + svgMargin.top + ")");
+
+
+//set default country coloring
+var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
+
+//set min/max values for refugees indicator to determine scale
+//TODO get distribution to change scale to non-linear (i.e. log)
+var minValue = Number.MAX_VALUE
+var maxValue = Number.MIN_VALUE
+var countryData;
+d3.json("resources/data.json", function(data){	
+		countryData = data;
+		console.log(data)
+		  for (var keyCountry in data){
+			  var regex = "Refugees_Total";
+			  for(var indicator in data[keyCountry]){
+				  if(indicator.match(regex)){
+					  // 66 is year 20
+					  year = 66;
+					  value = data[keyCountry][indicator][year];
+					  if(value === null)continue;
+					  if(value < minValue){
+						  minValue = value;
+					  }
+					  if(value > maxValue){
+						  maxValue = value;
+					  }
+				  }				
+			  }		
+		  }
+		  console.log(maxValue);
+		  console.log(minValue);
+	  });
 
 function updatePrimaryIndicator(){
 	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
-	if(newIndicatorName == indicator_main){
+	if(newIndicatorName == indicator_primary){
 		console.log("This indicator is already set as primary indicator.")
 		return;
+	} else if(newIndicatorName == indicator_secondary){
+		console.log("Cannot select same indicator as secondary indicator.");
 	}
-	//if newindicator exists display in html and set indicator_main
+	//if newindicator exists display in html and set indicator_primary
 	if(indicatorList.includes(newIndicatorName)){
-		document.getElementById("indicator_primary").innerHTML = newIndicatorName;
-		indicator_main = newIndicatorName;
-		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		indicator_primary = newIndicatorName;
+		for(i = 0; i < selectSecondary.options.length; i++){
+			var element = selectSecondary.options[i].value;
+			if(element == indicator_primary){
+				selectSecondary.options[i].disabled = true;
+			} else {
+				selectSecondary.options[i].disabled = false;
+			}
+		}
+		if(selectedCountries[1] != null)
+			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
+}
+
+
+function updateSecondaryIndicator(){
+	newIndicatorName = selectSecondary.options[selectSecondary.selectedIndex].value;
+	if(newIndicatorName == indicator_secondary){
+		console.log("This indicator is already set as secondary indicator.");
+		return;
+	} else if(newIndicatorName == indicator_primary){
+		console.log("Cannot select same indicator as primary indicator.");
+	}
+	//if newindicator exists display in html and set indicator_secondary
+	if(indicatorList.includes(newIndicatorName)){
+		indicator_secondary = newIndicatorName;
+		for(i = 0; i < selectPrimary.options.length; i++){
+			var element = selectPrimary.options[i].value;
+			if(element == indicator_secondary){
+				selectPrimary.options[i].disabled = true;
+			} else {
+				selectPrimary.options[i].disabled = false;
+			}
+		}
+		if(selectedCountries[1] != null)
+			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 }
 		
@@ -152,14 +226,14 @@ function drawDualBarChart(d1, d2) {
 	xDualBarChart.domain(xExtent);
 	yDualBarChart.domain(yExtent).nice();
 	
-	svg3.selectAll("g").remove();
+	svgComparison.selectAll("g").remove();
 	
-	svg3.append("g")
+	svgComparison.append("g")
 		.attr("class", "x axis")
 		//.attr("transform", "translate(0," + halfHeight + ")")
 		.attr("transform", "translate(0," + yDualBarChart(0) + ")")
 		.call(xAxisDBC);
-	svg3.append("g")
+	svgComparison.append("g")
 		.attr("class", "y axis axisLeft")
 		.attr("transform", "translate(0,0)")
 		.call(yAxisDBC)
@@ -170,7 +244,7 @@ function drawDualBarChart(d1, d2) {
 		.style("text-anchor", "end")
 		.text("GDP growth");
 		
-	svg3.append("g")
+	svgComparison.append("g")
 		.attr("class", "bars1")
 	.selectAll(".bar1")
 		.data(data1)
@@ -187,7 +261,7 @@ function drawDualBarChart(d1, d2) {
 		.on("mouseout",  barMouseOut)
 		.on("mouseover", barHovered); 
 		
-	svg3.append("g")
+	svgComparison.append("g")
 		.attr("class", "bars2")
 	.selectAll(".bar2")
 		.data(data2)
@@ -228,22 +302,22 @@ function drawScatterplot(d1, d2) {
 	//half height
 	y2.domain(yExtent).nice();
 
-	svg2.selectAll("g").remove();
+	svgScatter.selectAll("g").remove();
 
-	svg2.append("g")
+	svgScatter.append("g")
 		.attr("id", "xAxis")
 		.attr("class", "x axis")
-		.attr("transform", "translate(0," + halfHeight + ")")
+		.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
 		.call(xAxis)
 	.append("text")
 		.attr("class", "label")
 		.attr("id", "xLabel")
-		.attr("x", width)
+		.attr("x", svgInnerHalfWidth)
 		.attr("y", -6)
 		.style("text-anchor", "end")
 		.text("gdpGrowth");
 
-	svg2.append("g")
+	svgScatter.append("g")
 		.attr("id", "yAxis")
 		.attr("class", "y axis")
 		.call(yAxis2)
@@ -256,7 +330,7 @@ function drawScatterplot(d1, d2) {
 		.style("text-anchor", "end")
 		.text("y");
 
-	var points1 = svg2.append("g")
+	var points1 = svgScatter.append("g")
 		.attr("class", "plotArea")
 	.selectAll(".dot")
 		.data(data1)
@@ -268,7 +342,7 @@ function drawScatterplot(d1, d2) {
 		.attr("cy", function(d) { return y2(d.gdpGrowth); })
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 
-	var points2 = svg2.append("g")
+	var points2 = svgScatter.append("g")
 		.attr("class", "plotArea")
     .selectAll(".dot")
 		.data(data2)
@@ -294,14 +368,14 @@ function visualizeData(c1, c2){
 	if(typeof d[c1] === 'undefined')
 		data_1.fill(null, 0, EndYear - StartYear)
 	else {
-		data_1 = d[c1][indicator_main];
+		data_1 = d[c1][indicator_primary];
 		hasData_1 = true;
 	}
 
 	if(typeof d[c2] === 'undefined')
 		data_2.fill(null, 0, EndYear - StartYear)
 	else {
-		data_2 = d[c2][indicator_main];
+		data_2 = d[c2][indicator_primary];
 		hasData_2 = true;
 	}
 
@@ -315,49 +389,17 @@ function visualizeData(c1, c2){
 	});
 }
 
-var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
-var minValue = Number.MAX_VALUE
-var maxValue = Number.MIN_VALUE
-var countryData;
-d3.json("resources/data.json", function(data){	
-		countryData = data;
-		console.log(data)
-		  for (var keyCountry in data){
-			  var regex = "Refugees_Total";
-			  for(var indicator in data[keyCountry]){
-				  if(indicator.match(regex)){
-					  // 66 is year 20
-					  year = 66;
-					  value = data[keyCountry][indicator][year];
-					  if(value === null)continue;
-					  if(value < minValue){
-						  minValue = value;
-					  }
-					  if(value > maxValue){
-						  maxValue = value;
-					  }
-				  }				
-			  }		
-		  }
-		  console.log(maxValue)
-		  console.log(minValue)
-	  });
-function drawWorldMap() {
-	var viewWidth = window.innerWidth / 2 - margin.right;
-	var viewHeight = window.innerHeight - margin.bottom;
-	
-	var width = viewWidth - margin.left - margin.right;
-	var height = viewHeight - margin.top - margin.bottom;
 
+function drawWorldMap() {
 	var projection = d3.geoMercator()
-		.scale((Math.min(width,height)/500)*100)
-		.translate([width/2,height/1.5])
+		.scale((Math.min(halfWidth,viewHeight)/500)*100)
+		.translate([halfWidth/2,viewHeight/1.5])
 	
 	var path = d3.geoPath()
 		.projection(projection);
 		
 	//need this for correct panning
-	var g = svg1.append("g");
+	var g = svgMap.append("g");
 
 	//get json data and draw it
 	d3.json("countries.topo.json", function(error, world) {
@@ -438,7 +480,7 @@ function colorScale(d){
 
 function showTooltip(d) {
   label = d.properties.name;
-  var mouse = d3.mouse(svg1.node())
+  var mouse = d3.mouse(svgMap.node())
 	.map(function(d) { return parseInt(d); } );
   tooltip.classed("hidden", false)
 	.attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
@@ -471,8 +513,8 @@ function resetCountrySelection(){
 		}
 	})
 	selectedCountries = [null, null];
-	svg2.selectAll("g").remove();
-	svg3.selectAll("g").remove();
+	svgScatter.selectAll("g").remove();
+	svgComparison.selectAll("g").remove();
 }
 
 //behaviour: replace 2nd selection
@@ -482,6 +524,9 @@ function setSelected(element){
 	}
 	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
+		document.getElementById("SelectedCountry_1").innerHTML = selectedCountries[0].__data__.properties.name;
+		console.log("selectedCountries[0]");
+		console.log(selectedCountries[0]);
 		d3.select(selectedCountries[0]).classed('selected_1', true);
 		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
 	} else {//if 1st country selected set 2nd selection
@@ -490,6 +535,7 @@ function setSelected(element){
 			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
 		}
 		selectedCountries[1] = element;
+		document.getElementById("SelectedCountry_2").innerHTML = selectedCountries[1].__data__.properties.name;
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
@@ -536,46 +582,45 @@ function barMouseOut() {
 }
 
 function resize() {
-	var margin = {top: 20, right: 20, bottom: 20, left: 20};
-	var viewWidth = window.innerWidth / 2 - margin.right;
-	var viewHeight = window.innerHeight - margin.bottom;
+	viewWidth = window.innerWidth - (margin.right + margin.left);
+	viewHeight = window.innerHeight - (margin.bottom + margin.top);
 
-	d3.select("#svg1")
-		.attr("width", viewWidth)
+	halfWidth = viewWidth/2 - 1;
+	halfHeight = viewHeight/2 - 1;
+
+	d3.select("#svgMap")
+		.attr("width", halfWidth)
 		.attr("height", viewHeight)
 	
-	d3.select("#svg2")
-		.attr("width", viewWidth)
-		.attr("height", viewHeight/2-1)
+	d3.select("#svgScatter")
+		.attr("width", halfWidth)
+		.attr("height", halfHeight)
 		
-	d3.select("#svg3")
-		.attr("width", viewWidth)
-		.attr("height", viewHeight/2-1)
+	d3.select("#svgComparison")
+		.attr("width", halfWidth)
+		.attr("height", halfHeight)
 		
 	d3.select("g")
-		.attr("width", viewWidth)
+		.attr("width", halfWidth)
 		.attr("height", viewHeight)
 
 	d3.select("g").remove();
 	
 	drawWorldMap();
-	
-	width = viewWidth - margin.left - margin.right;
-	height = viewHeight - margin.top - margin.bottom;
-	halfHeight = (viewHeight/2 - 1) - margin.top - margin.bottom;
+
 	
 	//Scatterplot axes
-	x.range([0, width]);
-	y1.range([halfHeight, 0]);
-	y2.range([halfHeight, 0]);
+	x.range([0, svgInnerHalfWidth]);
+	y1.range([svgInnerHalfHeight, 0]);
+	y2.range([svgInnerHalfHeight, 0]);
 	
 	xAxis.scale(x);
 	yAxis1.scale(y1);
 	yAxis2.scale(y2);
 	
 	//Dual bar chart axes
-	xDualBarChart.rangeRound([0, width]);
-	yDualBarChart.range([halfHeight, 0]);
+	xDualBarChart.rangeRound([0, svgInnerHalfWidth]);
+	yDualBarChart.range([svgInnerHalfHeight, 0]);
 	
 	xAxisDBC.scale(xDualBarChart);
 	yAxisDBC.scale(yDualBarChart);
@@ -585,6 +630,30 @@ function resize() {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
+}
+
+function initOptions(indicatorNamesList){
+	var excludeSecondary = ["Refugees_Total"];
+
+	//fill select lists
+	selectPrimary = document.getElementById("select_indicator_primary");
+	indicatorNamesList.forEach(function(element){
+		var option = document.createElement("option"); 
+		option.text = element;
+		selectPrimary.add(option);
+	});
+
+	selectSecondary = document.getElementById("select_indicator_secondary");
+	indicatorNamesList.forEach(function(element){
+		if(!excludeSecondary.includes(element)){
+			var option = document.createElement("option"); 
+			option.text = element;
+			selectSecondary.add(option);
+		}
+	});
+
+	updatePrimaryIndicator();
+	updateSecondaryIndicator();
 }
 
 d3.select(window).on("resize", resize);
