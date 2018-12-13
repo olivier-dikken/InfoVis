@@ -283,11 +283,11 @@ function drawScatterplot(d1, d2) {
 	
 	for (var i = 0; i < d1.length; i++) {
 		if(!isNaN(d1[i]) & d1[i] != null){
-			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
+			var item = {"value": d1[i], "year": xArray[i]};
 			data1.push(item);
 		}
 		if(!isNaN(d2[i]) & d2[i] != null){
-			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
+			var item = {"value": d2[i], "year": xArray[i]};
 			data2.push(item);
 		}
 	}
@@ -339,7 +339,7 @@ function drawScatterplot(d1, d2) {
 		.attr("class", "dotscountry1")
 		.attr("r", 3.5)
 		.attr("cx", function(d) { return x(d.year); })
-		.attr("cy", function(d) { return y2(d.gdpGrowth); })
+		.attr("cy", function(d) { return y2(d.value); })
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 
 	var points2 = svgScatter.append("g")
@@ -351,7 +351,7 @@ function drawScatterplot(d1, d2) {
 		.attr("class", "dotscountry2")
 		.attr("r", 3.5)
 		.attr("cx", function(d) { return x(d.year); })
-		.attr("cy", function(d) { return y2(d.gdpGrowth); })
+		.attr("cy", function(d) { return y2(d.value); })
 
 }
 
