@@ -12,6 +12,10 @@
     	<!-- TopPanel used for controls -->
     	<div id="TopPanel" style="display: flex; align-items: center;">
     		<button onclick="resetCountrySelection()">Reset</button>
+			<div class="slider_container">
+				<span id="year_value"></span>
+				<input type="range" min="1951" max="2017" value="1" id="year_slider">
+			</div>
     		<div style="margin-left: 10px; display: flex; align-items: center;">
     			<p>Primary Indicator:</p>
 	    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
@@ -38,8 +42,4 @@
 	    </div>
 		<script type="text/javascript" src="worldmap.js"></script>
     </body>
-		<div class="slider_container">
-			<span id="year_value"></span>
-			<input type="range" min="1951" max="2017" value="1" id="year_slider">
-		</div>
 </html>
