@@ -20,7 +20,7 @@ initOptions(indicatorList);
 //init config
 var StartYear = 1951;
 var EndYear = 2018;
-var CurrentYear = EndYear;
+var CurrentYear = EndYear - 1;
 var xArray = Array.range(StartYear, EndYear);
 
 // Slider init
@@ -74,21 +74,14 @@ var x = d3.scaleLinear()
     .range([0, svgInnerHalfWidth]);
 
 //half height
-var y1 = d3.scaleLinear()
+var y = d3.scaleLinear()
     .range([svgInnerHalfHeight, 0]);
-
-//half height
-var y2 = d3.scaleLinear()
-	.range([svgInnerHalfHeight, 0])
 
 var xAxis = d3.axisBottom()
     .scale(x);
 
-var yAxis1 = d3.axisLeft()
-    .scale(y1);
-
-var yAxis2 = d3.axisLeft()
-	.scale(y2);
+var yAxis = d3.axisLeft()
+    .scale(y);
 
 d3.select("#comparison").append("svg")
 	.attr("id", "svgScatter")
@@ -302,29 +295,21 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 }
 
 function drawScatterplot(d1, d2) {
-	var data1 = [];
-	var data2 = [];
+	var data = [];
 	
-	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(d1[i]) && d1[i] != null){
-			var item = {"value": d1[i], "year": xArray[i]};
-			data1.push(item);
+	Object.keys(d1).map(function(c) { 
+		if(!isNaN(d1[c]) && d1[c] != null && !isNaN(d2[c]) && d2[c] != null) {
+			var item = {indicator_primary: d1[c], indicator_secondary: d2[c], ISO_code: c};
+			data.push(item);
 		}
-		if(!isNaN(d2[i]) && d2[i] != null){
-			var item = {"value": d2[i], "year": xArray[i]};
-			data2.push(item);
-		}
-	}
-
-	var xExtent = d3.extent(xArray, function(d) { return d; });
+	});
+	
+	var xExtent = d3.extent(Object.values(d1), function(d) { return d; });
 	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
-	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
+	var yExtent = d3.extent(Object.values(d2), function(d) { return d; });
 
 	x.domain(xExtent).nice();
-	y1.domain(yExtent).nice();
-
-	//half height
-	y2.domain(yExtent).nice();
+	y.domain(yExtent).nice();
 
 	svgScatter.selectAll("g").remove();
 
@@ -344,7 +329,7 @@ function drawScatterplot(d1, d2) {
 	svgScatter.append("g")
 		.attr("id", "yAxis")
 		.attr("class", "y axis")
-		.call(yAxis2)
+		.call(yAxis)
 	.append("text")
 		.attr("class", "label")
 		.attr("id", "yLabel")
@@ -354,29 +339,22 @@ function drawScatterplot(d1, d2) {
 		.style("text-anchor", "end")
 		.text("y");
 
-	var points1 = svgScatter.append("g")
+	var points = svgScatter.append("g")
 		.attr("class", "plotArea")
 	.selectAll(".dot")
-		.data(data1)
+		.data(data)
     .enter().append("circle")
 		.attr("class", "dot")
 		.attr("class", "dotscountry1")
-		.attr("r", 3.5)
-		.attr("cx", function(d) { return x(d.year); })
-		.attr("cy", function(d) { return y2(d.value); })
+		.attr("r", dotRadius)
+		.attr("cx", function(d) { return x(d.indicator_primary); })
+		.attr("cy", function(d) { return y(d.indicator_secondary); })
+		.attr("countryCode", function(d) { return d.ISO_code; })
+		.attr("class", colorDots)
+		.on("mousemove", showDotTooltip)
+		.on("mouseover", hovered)
+		.on("mouseout",  mouseOut);
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
-
-	var points2 = svgScatter.append("g")
-		.attr("class", "plotArea")
-    .selectAll(".dot")
-		.data(data2)
-    .enter().append("circle")
-		.attr("class", "dot")
-		.attr("class", "dotscountry2")
-		.attr("r", 3.5)
-		.attr("cx", function(d) { return x(d.year); })
-		.attr("cy", function(d) { return y2(d.value); })
-
 }
 
 
@@ -393,7 +371,6 @@ function visualizeData(c1, c2){
 	var hasData_2_secondary = false;
 
 	d3.json("resources/data.json", function(d) {
-
 	if(typeof d[c1] === 'undefined'){
 		data_1.fill(null, 0, TimeLength);
 		data_1_secondary.fill(null, 0, TimeLength);
@@ -412,8 +389,20 @@ function visualizeData(c1, c2){
 		hasData_2 = true;
 	}
 
+	var primaryindicators = {};
+	var secondaryindicators = {};
+
+	Object.keys(d).map(function(c) { 
+		if (d[c][indicator_primary] != undefined) {
+			primaryindicators[c] = d[c][indicator_primary][CurrentYear - StartYear]
+		}
+		if (d[c][indicator_secondary] != undefined) {
+			secondaryindicators[c] = d[c][indicator_secondary][CurrentYear - StartYear]
+		}
+	});
+	
 	if(hasData_1 || hasData_2){
-		drawScatterplot(data_1, data_2);
+		drawScatterplot(primaryindicators, secondaryindicators);
 		drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary);
 	} else {
 		//notify user no data
@@ -483,11 +472,8 @@ for(var i = 0; i < 6; i++){
   .attr("x", 50)
   .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
   .text(function(d, i){ return intervals[i]; });
-
-
-
-	
 }
+
 function colorScale(d){	
 	var countryCode = d.id
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
@@ -508,6 +494,32 @@ function colorScale(d){
 	
 }
 	
+function colorDots(d) { 
+	if (d.ISO_code == selectedCountries[0].id) {
+		return "dotscountry1";
+	} else if (d.ISO_code == selectedCountries[1].id) {
+		return "dotscountry2";
+	} else {
+		return "";
+	}
+}
+
+function dotRadius(d) { 
+	if (d.ISO_code == selectedCountries[0].id || d.ISO_code == selectedCountries[1].id) {
+		return 7;
+	} else {
+		return 3.5;
+	}
+}
+		
+function showDotTooltip(d) {
+  label = d.ISO_code;
+  var mouse = d3.mouse(svgScatter.node())
+	.map(function(d) { return parseInt(d); } );
+  tooltip.classed("hidden", false)
+	.attr("style", "left:"+(mouse[0]+halfWidth+svgMargin.left+margin.left+offsetL)+"px;top:"+(mouse[1]+halfHeight+svgMargin.top+offsetT)+"px")
+	.html(label);
+}
 
 function showTooltip(d) {
   label = d.properties.name;
@@ -556,8 +568,8 @@ function setSelected(element){
 	if(selectedCountries[0] === null){//if no countries selected set 1st selection
 		selectedCountries[0] = element;
 		document.getElementById("SelectedCountry_1").innerHTML = selectedCountries[0].__data__.properties.name;
-		console.log("selectedCountries[0]");
-		console.log(selectedCountries[0]);
+		// console.log("selectedCountries[0]");
+		// console.log(selectedCountries[0]);
 		d3.select(selectedCountries[0]).classed('selected_1', true);
 		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
 	} else {//if 1st country selected set 2nd selection
@@ -601,6 +613,7 @@ function zoomed() {
 function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	CurrentYear = y;
+	drawWorldMap();
 }
 
 function barHovered() {
@@ -650,8 +663,7 @@ function resize() {
 	y2.range([svgInnerHalfHeight, 0]);
 	
 	xAxis.scale(x);
-	yAxis1.scale(y1);
-	yAxis2.scale(y2);
+	yAxis.scale(y1);
 	
 	//Dual bar chart axes
 	xDualBarChart.rangeRound([0, svgInnerHalfWidth]);
