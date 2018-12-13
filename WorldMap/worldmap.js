@@ -20,7 +20,6 @@ initOptions(indicatorList);
 //init config
 var StartYear = 1951;
 var EndYear = 2018;
-var CurrentYear = EndYear - 1;
 var xArray = Array.range(StartYear, EndYear);
 
 // Slider init
@@ -128,31 +127,37 @@ var minValue = Number.MAX_VALUE
 var maxValue = Number.MIN_VALUE
 
 var countryData; // store data.json
-var worldData; //store countries.json
+var worldData; //store countries.topo.json
 
-d3.json("resources/data.json", function(data){	
-		countryData = data;
-		console.log(data)
-		  for (var keyCountry in data){
-			  var regex = "Refugees_Total";
-			  for(var indicator in data[keyCountry]){
-				  if(indicator.match(regex)){
-					  // 66 is year 20
-					  year = 66;
-					  value = data[keyCountry][indicator][year];
-					  if(value === null)continue;
-					  if(value < minValue){
-						  minValue = value;
-					  }
-					  if(value > maxValue){
-						  maxValue = value;
-					  }
-				  }				
-			  }		
-		  }
-		  console.log(maxValue);
-		  console.log(minValue);
-	  });
+d3.json("resources/data.json", function(error, data){
+	if(error) return console.error(error);	
+	countryData = data;
+	console.log(data)
+	for (var keyCountry in data){
+		var regex = "Refugees_Total";
+		for(var indicator in data[keyCountry]){
+			if(indicator.match(regex)){
+				// 66 is year 20
+				year = 66;
+				value = data[keyCountry][indicator][year];
+				if(value === null) continue;
+				if(value < minValue){
+					minValue = value;
+				}
+				if(value > maxValue){
+					maxValue = value;
+				}
+			}				
+		}		
+	}
+	console.log(maxValue);
+	console.log(minValue);
+});
+
+d3.json("countries.topo.json", function(error, world) {
+		if(error) return console.error(error);
+		worldData = world;
+});
 
 function updatePrimaryIndicator(){
 	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
@@ -360,8 +365,8 @@ function drawScatterplot(d1, d2) {
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 }
 
-
 function visualizeData(c1, c2){
+	console.log(selected_year);
 	var TimeLength = EndYear - StartYear;
 
 	var data_1 				= new Array(TimeLength);
@@ -373,34 +378,33 @@ function visualizeData(c1, c2){
 	var hasData_2 			= false;
 	var hasData_2_secondary = false;
 
-	d3.json("resources/data.json", function(d) {
-	if(typeof d[c1] === 'undefined'){
+	if(typeof countryData[c1] === 'undefined'){
 		data_1.fill(null, 0, TimeLength);
 		data_1_secondary.fill(null, 0, TimeLength);
 	} else {
-		data_1 = d[c1][indicator_primary];
-		data_1_secondary = d[c1][indicator_secondary];
+		data_1 = countryData[c1][indicator_primary];
+		data_1_secondary = countryData[c1][indicator_secondary];
 		hasData_1 = true;
 	}
 
-	if(typeof d[c2] === 'undefined'){
+	if(typeof countryData[c2] === 'undefined'){
 		data_2.fill(null, 0, TimeLength);
 		data_2_secondary.fill(null, 0, TimeLength);
 	} else {
-		data_2 = d[c2][indicator_primary];
-		data_2_secondary = d[c2][indicator_secondary];
+		data_2 = countryData[c2][indicator_primary];
+		data_2_secondary = countryData[c2][indicator_secondary];
 		hasData_2 = true;
 	}
 
 	var primaryindicators = {};
 	var secondaryindicators = {};
 
-	Object.keys(d).map(function(c) { 
-		if (d[c][indicator_primary] != undefined) {
-			primaryindicators[c] = d[c][indicator_primary][CurrentYear - StartYear]
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c][indicator_primary] != undefined) {
+			primaryindicators[c] = countryData[c][indicator_primary][selected_year - StartYear]
 		}
-		if (d[c][indicator_secondary] != undefined) {
-			secondaryindicators[c] = d[c][indicator_secondary][CurrentYear - StartYear]
+		if (countryData[c][indicator_secondary] != undefined) {
+			secondaryindicators[c] = countryData[c][indicator_secondary][selected_year - StartYear]
 		}
 	});
 	
@@ -411,7 +415,6 @@ function visualizeData(c1, c2){
 		//notify user no data
 		alert('No Data for selection.');
 	}
-	});
 }
 
 
@@ -426,25 +429,20 @@ function drawWorldMap() {
 	//need this for correct panning
 	var g = svgMap.append("g");
 
-	//get json data and draw it
-	d3.json("countries.topo.json", function(error, world) {
-		if(error) return console.error(error);
-		
-		worldData = world;
-		//countries
-		g.attr("class", "boundary").selectAll("boundary")
-			.data(topojson.feature(world, world.objects.countries).features).enter()
-				.append("path")
-				.attr("name", function(d) {return d.properties.name;})
-				.attr("id", function(d) { return d.id;})
-				.on("click", clicked)
-				.on("mousemove", showTooltip)
-				.on("mouseover", hovered)
-				.on("mouseout",  mouseOut)
-				.attr("d", path)
-				.attr("style",  countryStyle)
-				.style("fill", colorScale);	
-	});
+	// Use worldData to draw all countries
+	g.attr("class", "boundary").selectAll("boundary")
+		.data(topojson.feature(worldData, worldData.objects.countries).features).enter()
+			.append("path")
+			.attr("name", function(d) {return d.properties.name;})
+			.attr("id", function(d) { return d.id;})
+			.on("click", clicked)
+			.on("mousemove", showTooltip)
+			.on("mouseover", hovered)
+			.on("mouseout",  mouseOut)
+			.attr("d", path)
+			.attr("style",  countryStyle)
+			.style("fill", colorScale);	
+				
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
 	var intervals = []
  
@@ -477,23 +475,24 @@ function drawWorldMap() {
 }
 
 function colorScale(d){	
-	var countryCode = d.id
-	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
-	if(countryData[countryCode]){
-		if(countryData[countryCode]["Refugees_Total"]){
-			value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
-			return colors(value);
+	if (d != null) {
+		var countryCode = d.id
+		var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
+		var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
+		if(countryData[countryCode]){
+			if(countryData[countryCode]["Refugees_Total"]){
+				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
+				return colors(value);
+			}
+			else{
+				return "grey"
+			}
+			
 		}
 		else{
-			return "grey"
+			return "black"
 		}
-		
 	}
-	else{
-		return "black"
-	}
-	
 }
 	
 function colorDots(d) { 
@@ -638,8 +637,12 @@ function zoomed() {
 
 function setYear(y) {
  	console.log("Selected year is set to: " + y);
-	CurrentYear = y;
-	drawWorldMap();
+	selected_year = y;
+	// drawWorldMap();
+	// 2 countries need to be selected before calling 'visualizeData()'
+	if (selectedCountries[1] !== null) {
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
 }
 
 function barHovered() {
@@ -733,7 +736,7 @@ d3.select(window).on("resize", resize);
 
 slider.oninput = function() {
 	output.innerHTML = this.value;
-	selected_year = Number(this.value);
+	setYear(Number(this.value));
 	d3.selectAll("path").style("fill", colorScale)
 }
 
