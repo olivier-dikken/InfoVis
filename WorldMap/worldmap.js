@@ -638,6 +638,7 @@ function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	selected_year = y;
 	// update slider
+	output.innerHTML = selected_year;
 	slider.value = selected_year;	
 	// update world map
 	d3.selectAll("path").style("fill", colorScale)
@@ -735,7 +736,6 @@ function initOptions(indicatorNamesList){
 d3.select(window).on("resize", resize);
 
 slider.oninput = function() {
-	output.innerHTML = this.value;
 	setYear(Number(this.value));
 }
 
