@@ -82,3 +82,7 @@ div.tooltip {
 .barhovered {
   fill-opacity: 1 !important;
 }
+.slider_container{
+  display: inline;
+  margin: 0 20px;
+}

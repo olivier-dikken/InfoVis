@@ -126,7 +126,7 @@ var svgComparison = d3.select("#svgComparison")
 
 
 //set default country coloring
-var countryStyle = function(d, i) { return "fill-opacity: " + (i/177) };
+var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 
 //set min/max values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
