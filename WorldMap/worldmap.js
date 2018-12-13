@@ -220,7 +220,7 @@ function drawDualBarChart(d1, d2) {
 	//var xExtent = d3.extent(xArray, function(d) { return d; });
 	var xExtent = xArray.map(function(d) { return d; });
 	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
-	var yExtent = d3.extent(d1.concat(d2), function(d) { return d; });
+	var yExtent = d3.extent(d1.concat(d2).concat([0]), function(d) { return d; });
 
 	//xDualBarChart.domain(xExtent).nice(); // gives an error
 	xDualBarChart.domain(xExtent);
