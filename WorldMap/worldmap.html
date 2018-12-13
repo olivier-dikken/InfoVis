@@ -1,42 +1,45 @@
 <!doctype html>
 <html>
-
-<head>
-	<meta charset="utf-8">
-	<link href="worldmap.css" rel="stylesheet">
-	<script src="d3.v4.min.js"></script>
-	<script src="d3.geomap.dependencies.min.js"></script>
-	<script src="d3.geomap.min.js"></script>
-	<script src="topojson.v3.min.js"></script>
-</head>
-
-<body>
-	<!-- TopPanel used for controls -->
-	<div id="TopPanel" style="display: flex; align-items: center;">
-		<button onclick="resetCountrySelection()">Reset</button>
-		<div class="slider_container">
-			<span id="year_value"></span>
-			<input type="range" min="1951" max="2017" value="1" id="year_slider">
-		</div>
-		<div style="margin-left: 10px; display: flex; align-items: center;">
-			<p>Primary Indicator:</p>
-			<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
-		</div>
-		<div style="margin-left: 10px; display: flex; align-items: center;">
-			<p>Secondary Indicator:</p>
-			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()"></select>
-		</div>
-		<div id="SelectedCountries" style="margin-left: 40px;">
-			<p><strong>Selection: </strong><span style="color: red" id="SelectedCountry_1"></span> <span style="color: blue" id="SelectedCountry_2"></span></p>
-			<p id="SelectedYear"></p>
-		</div>
-	</div>
-	<div id="map" style="float:left;"></div>
-	<div id="rightPanel" style="float:right">
-		<div id="versus"></div>
-		<div id="comparison"></div>
-	</div>
-	<script type="text/javascript" src="worldmap.js"></script>
-</body>
-
+	<head>
+		<meta charset="utf-8">
+		<link href="worldmap.css" rel="stylesheet">
+		<script src="d3.v4.min.js"></script>
+		<script src="d3.geomap.dependencies.min.js"></script>
+		<script src="d3.geomap.min.js"></script>
+		<script src="topojson.v3.min.js"></script>
+    </head>
+    <body>
+    	<!-- TopPanel used for controls -->
+    	<div id="TopPanel" style="display: flex; align-items: center;">
+    		<button onclick="resetCountrySelection()">Reset</button>
+			<div class="slider_container">
+				<span id="year_value"></span>
+				<input type="range" min="1951" max="2017" value="1" id="year_slider">
+			</div>
+    		<div style="margin-left: 10px; display: flex; align-items: center;">
+    			<p>Primary Indicator:</p>
+	    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
+    		</div>
+    		<div style="margin-left: 10px; display: flex; align-items: center;">
+    			<p>Secondary Indicator:</p>
+    			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()"></select>
+    		</div>
+    		<div id="SelectedCountries" style="margin-left: 40px;">
+    			<p><strong>Selection: </strong><span style="color: red" id="SelectedCountry_1"></span> <span style="color: blue" id="SelectedCountry_2"></span></p><p id="SelectedYear"></p>
+    		</div>
+    		<div>
+	    		<!-- Rounded switch -->
+				<label class="switch">
+				  <input type="checkbox">
+				  <span class="slider round"></span>
+				</label>
+			</div>
+    	</div>
+        <div id="map" style="float:left;"></div>
+        <div id="rightPanel" style="float:right">
+	        <div id="versus"></div>
+	        <div id="comparison"></div>
+	    </div>
+		<script type="text/javascript" src="worldmap.js"></script>
+    </body>
 </html>

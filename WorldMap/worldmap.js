@@ -8,6 +8,7 @@ Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + 
 var indicator_primary = "";
 var indicator_secondary = "";
 var indicatorList = ["Refugees_Total", "GDP growth (annual %)", "GDP per capita (current US$)", "Population density (people per sq. km of land area)", "Population growth (annual %)"];
+var multiplyInicatorList = ["Population density (people per sq. km of land area)"];
 var selectPrimary;
 var selectSecondary;
 var selectedCountries = [null, null];
@@ -206,20 +207,37 @@ function updateSecondaryIndicator(){
 	}
 }
 		
-function drawDualBarChart(d1, d2) {
+function drawDualBarChart(dp1, dp2, ds1, ds2) {
 	//console.log("d1: " + d1);
 	//console.log("d2: " + d2);
 	var data1 = [];
 	var data2 = [];
+
+	var d1 = new Array(dp1.length);
+	var d2 = new Array(dp2.length);
 	
 	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(d1[i])){
-			var item = {"gdpGrowth": d1[i], "year": xArray[i]};
+		if(!isNaN(dp1[i]) && dp1[i] != null && !isNaN(ds1[i]) && ds1[i] != null){
+			if(multiplyInicatorList.includes(indicator_secondary)){
+				var item = {"pval": dp1[i], "sval": 1/ds1[i], "year": xArray[i]};
+			} else {
+				var item = {"pval": dp1[i], "sval": ds1[i], "year": xArray[i]};
+			}
 			data1.push(item);
+			d1[i] = item.pval/item.sval;
+		} else {
+			d1[i] = null;
 		}
-		if(!isNaN(d2[i])){
-			var item = {"gdpGrowth": d2[i], "year": xArray[i]};
+		if(!isNaN(dp2[i]) && dp2[i] != null && !isNaN(ds2[i]) && ds2[i] != null){
+			if(multiplyInicatorList.includes(indicator_secondary)){
+				var item = {"pval": dp2[i], "sval": 1/ds2[i], "year": xArray[i]};
+			} else {
+				var item = {"pval": dp2[i], "sval": ds2[i], "year": xArray[i]};
+			}
 			data2.push(item);
+			d2[i] = dp2[i]*ds2[i];
+		} else {
+			d2[i] = null;
 		}
 	}
 
@@ -260,8 +278,8 @@ function drawDualBarChart(d1, d2) {
 		.attr("width", xDualBarChart.bandwidth()/2)
 		//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
 		//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
-		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.pval/d.sval)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.pval/d.sval) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -275,8 +293,8 @@ function drawDualBarChart(d1, d2) {
 		.attr("class", "bar2")
 		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
 		.attr("width", xDualBarChart.bandwidth()/2)
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.gdpGrowth)); })
-		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.gdpGrowth) - yDualBarChart(0)); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.pval/d.sval)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.pval/d.sval) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -288,11 +306,11 @@ function drawScatterplot(d1, d2) {
 	var data2 = [];
 	
 	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(d1[i]) & d1[i] != null){
+		if(!isNaN(d1[i]) && d1[i] != null){
 			var item = {"value": d1[i], "year": xArray[i]};
 			data1.push(item);
 		}
-		if(!isNaN(d2[i]) & d2[i] != null){
+		if(!isNaN(d2[i]) && d2[i] != null){
 			var item = {"value": d2[i], "year": xArray[i]};
 			data2.push(item);
 		}
@@ -364,30 +382,39 @@ function drawScatterplot(d1, d2) {
 
 function visualizeData(c1, c2){
 	var TimeLength = EndYear - StartYear;
-	var data_1 = new Array(TimeLength);
-	var data_2 = new Array(TimeLength);
-	var hasData_1 = false;
-	var hasData_2 = false;
+
+	var data_1 				= new Array(TimeLength);
+	var data_1_secondary 	= new Array(TimeLength);
+	var data_2 				= new Array(TimeLength);
+	var data_2_secondary 	= new Array(TimeLength);
+	var hasData_1 			= false;
+	var hasData_1_secondary = false;
+	var hasData_2 			= false;
+	var hasData_2_secondary = false;
 
 	d3.json("resources/data.json", function(d) {
 
-	if(typeof d[c1] === 'undefined')
-		data_1.fill(null, 0, EndYear - StartYear)
-	else {
+	if(typeof d[c1] === 'undefined'){
+		data_1.fill(null, 0, TimeLength);
+		data_1_secondary.fill(null, 0, TimeLength);
+	} else {
 		data_1 = d[c1][indicator_primary];
+		data_1_secondary = d[c1][indicator_secondary];
 		hasData_1 = true;
 	}
 
-	if(typeof d[c2] === 'undefined')
-		data_2.fill(null, 0, EndYear - StartYear)
-	else {
+	if(typeof d[c2] === 'undefined'){
+		data_2.fill(null, 0, TimeLength);
+		data_2_secondary.fill(null, 0, TimeLength);
+	} else {
 		data_2 = d[c2][indicator_primary];
+		data_2_secondary = d[c2][indicator_secondary];
 		hasData_2 = true;
 	}
 
 	if(hasData_1 || hasData_2){
 		drawScatterplot(data_1, data_2);
-		drawDualBarChart(data_1, data_2);
+		drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary);
 	} else {
 		//notify user no data
 		alert('No Data for selection.');
