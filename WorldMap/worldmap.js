@@ -19,7 +19,7 @@ indicatorList.forEach(function(element){
 //init config
 var StartYear = 1951;
 var EndYear = 2018;
-var CurrentYear = EndYear;
+var CurrentYear = EndYear - 1;
 var xArray = Array.range(StartYear, EndYear);
 
 var margin = {top: 20, right: 20, bottom: 30, left: 40};
@@ -380,9 +380,9 @@ function drawWorldMap() {
 						
 	});
 
-	var legend = svg.append("g")
+	var legend = svg1.append("g")
   .attr("class", "legend")
-  .attr("x", w - 65)
+  .attr("x", width - 65)
   .attr("y", 25)
   .attr("height", 100)
   .attr("width", 100);
@@ -400,10 +400,10 @@ function colorScale(d){
 ];
 	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(colors);			
 	// 66 is year 2017
-	var year = 66;
+	// var year = 66;
 	if(countryData[countryCode]){
 		if(countryData[countryCode]["Refugees_Total"]){
-			value = countryData[countryCode]["Refugees_Total"][year];
+			value = countryData[countryCode]["Refugees_Total"][CurrentYear - StartYear];
 			return colors(value);
 		}
 		else{
@@ -506,6 +506,7 @@ function zoomed() {
 function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	CurrentYear = y;
+	drawWorldMap();
 }
 
 function barHovered() {
