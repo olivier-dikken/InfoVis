@@ -126,7 +126,10 @@ var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 //TODO get distribution to change scale to non-linear (i.e. log)
 var minValue = Number.MAX_VALUE
 var maxValue = Number.MIN_VALUE
-var countryData;
+
+var countryData; // store data.json
+var worldData; //store countries.json
+
 d3.json("resources/data.json", function(data){	
 		countryData = data;
 		console.log(data)
@@ -353,7 +356,7 @@ function drawScatterplot(d1, d2) {
 		.attr("class", colorDots)
 		.on("mousemove", showDotTooltip)
 		.on("mouseover", hovered)
-		.on("mouseout",  mouseOut);
+		.on("mouseout",  dotMouseOut);
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 }
 
@@ -425,11 +428,11 @@ function drawWorldMap() {
 
 	//get json data and draw it
 	d3.json("countries.topo.json", function(error, world) {
-	  if(error) return console.error(error);
-
-	  //countries
-	  g.attr("class", "boundary")
-		.selectAll("boundary")
+		if(error) return console.error(error);
+		
+		worldData = world;
+		//countries
+		g.attr("class", "boundary").selectAll("boundary")
 			.data(topojson.feature(world, world.objects.countries).features).enter()
 				.append("path")
 				.attr("name", function(d) {return d.properties.name;})
@@ -441,37 +444,36 @@ function drawWorldMap() {
 				.attr("d", path)
 				.attr("style",  countryStyle)
 				.style("fill", colorScale);	
-						
 	});
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-var intervals = []
+	var intervals = []
  
-for(var i = 0; i < 6; i++){
-	var limit = (500000) * i;
-	intervals.push(limit);
-}
+	for(var i = 0; i < 6; i++){
+		var limit = (500000) * i;
+		intervals.push(limit);
+	}
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
-  .data(intervals)
-  .enter().append("g")
-  .attr("class", "legend");
+		.data(intervals)
+		.enter().append("g")
+		.attr("class", "legend");
 
   
-  var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-  var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
-  var ls_w = 20, ls_h = 20; var height = 200;
-  legend.append("rect")
-  .attr("x", 20)
-  .attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
-  .attr("width", ls_w)
-  .attr("height", ls_h)
-  .style("fill", function(d, i) { return colorsFunction(d); })
-  .style("opacity", 0.8);
+	var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
+	var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+	var ls_w = 20, ls_h = 20; var height = 200;
+	legend.append("rect")
+		.attr("x", 20)
+		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
+		.attr("width", ls_w)
+		.attr("height", ls_h)
+		.style("fill", function(d, i) { return colorsFunction(d); })
+		.style("opacity", 0.8);
 
-  legend.append("text")
-  .attr("x", 50)
-  .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
-  .text(function(d, i){ return intervals[i]; });
+	legend.append("text")
+		.attr("x", 50)
+		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
+		.text(function(d, i){ return intervals[i]; });
 }
 
 function colorScale(d){	
@@ -513,12 +515,36 @@ function dotRadius(d) {
 }
 		
 function showDotTooltip(d) {
-  label = d.ISO_code;
-  var mouse = d3.mouse(svgScatter.node())
-	.map(function(d) { return parseInt(d); } );
-  tooltip.classed("hidden", false)
-	.attr("style", "left:"+(mouse[0]+halfWidth+svgMargin.left+margin.left+offsetL)+"px;top:"+(mouse[1]+halfHeight+svgMargin.top+offsetT)+"px")
-	.html(label);
+	country = document.getElementById(d.ISO_code);
+	label = d.ISO_code;
+	
+	if (country != null) {
+		// color border of country of the dot
+		country.classList.add('dothovered');
+		country.setAttribute("stroke-width", 5/zoomk + "px");
+		
+		// label for tooltop
+		label = country.getAttribute("name");
+	}
+	// add tooltip
+	var mouse = d3.mouse(svgScatter.node())
+		.map(function(d) { return parseInt(d); } );
+	tooltip.classed("hidden", false)
+		.attr("style", "left:"+(mouse[0]+halfWidth+svgMargin.left+margin.left+offsetL)+"px;top:"+(mouse[1]+halfHeight+svgMargin.top+offsetT)+"px")
+		.html(label);
+}
+
+function dotMouseOut(d) {
+	//hide tooltip
+	tooltip.classed("hidden", true);
+	//unhover
+ 	d3.select('.hovered').classed('hovered', false);
+	// uncolor country border
+	country = document.getElementById(d.ISO_code);
+	if (country != null) {
+		country.classList.remove('dothovered');
+		country.setAttribute("stroke-width", 1/zoomk + "px");
+	}
 }
 
 function showTooltip(d) {
