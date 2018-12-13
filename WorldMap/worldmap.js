@@ -588,6 +588,10 @@ function resize() {
 	halfWidth = viewWidth/2 - 1;
 	halfHeight = viewHeight/2 - 1;
 
+	svgInnerHalfWidth = halfWidth - (svgMargin.left + svgMargin.right);
+	svgInnerFullHeight = viewHeight - (svgMargin.top + svgMargin.bottom);
+	svgInnerHalfHeight = halfHeight - (svgMargin.top + svgMargin.bottom);
+
 	d3.select("#svgMap")
 		.attr("width", halfWidth)
 		.attr("height", viewHeight)
