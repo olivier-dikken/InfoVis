@@ -3,7 +3,6 @@
 
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
-
 //init options
 var indicator_primary = "";
 var indicator_secondary = "";
@@ -15,8 +14,6 @@ var selectedCountries = [null, null];
 //add options to drowdowns
 initOptions(indicatorList);
 
-
-
 //init config
 var StartYear = 1951;
 var EndYear = 2018;
@@ -27,7 +24,6 @@ var slider = document.getElementById("year_slider");
 var output = document.getElementById("year_value");
 var selected_year = Number(slider.value)
 output.innerHTML = slider.value; // Display the default slider value
-
 
 //view settings
 //TopPanel height is hardcoded in css to 80px
@@ -43,8 +39,6 @@ var halfHeight = viewHeight/2 - 1;
 var svgInnerHalfWidth = halfWidth - (svgMargin.left + svgMargin.right);
 var svgInnerFullHeight = viewHeight - (svgMargin.top + svgMargin.bottom);
 var svgInnerHalfHeight = halfHeight - (svgMargin.top + svgMargin.bottom);
-
-
 
 //WorldMap variables
 var zoom = d3.zoom()
@@ -155,8 +149,9 @@ d3.json("resources/data.json", function(error, data){
 });
 
 d3.json("countries.topo.json", function(error, world) {
-		if(error) return console.error(error);
-		worldData = world;
+	if(error) return console.error(error);
+	worldData = world;
+	//console.log(worldData);
 });
 
 function updatePrimaryIndicator(){
@@ -360,13 +355,12 @@ function drawScatterplot(d1, d2) {
 		.attr("countryCode", function(d) { return d.ISO_code; })
 		.attr("class", colorDots)
 		.on("mousemove", showDotTooltip)
-		.on("mouseover", hovered)
+		.on("mouseover", dotHovered)
 		.on("mouseout",  dotMouseOut);
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 }
 
 function visualizeData(c1, c2){
-	console.log(selected_year);
 	var TimeLength = EndYear - StartYear;
 
 	var data_1 				= new Array(TimeLength);
@@ -519,7 +513,7 @@ function showDotTooltip(d) {
 	
 	if (country != null) {
 		// color border of country of the dot
-		country.classList.add('dothovered');
+		country.classList.add('countrydothovered');
 		country.setAttribute("stroke-width", 5/zoomk + "px");
 		
 		// label for tooltop
@@ -537,13 +531,19 @@ function dotMouseOut(d) {
 	//hide tooltip
 	tooltip.classed("hidden", true);
 	//unhover
- 	d3.select('.hovered').classed('hovered', false);
+ 	d3.select('.countrydothovered').classed('countrydothovered', false);
+	d3.select('.dothovered').classed('dothovered', false);
 	// uncolor country border
 	country = document.getElementById(d.ISO_code);
 	if (country != null) {
-		country.classList.remove('dothovered');
+		country.classList.remove('countrydothovered');
 		country.setAttribute("stroke-width", 1/zoomk + "px");
 	}
+}
+
+function dotHovered(){
+	d3.select('.dothovered').classed('dothovered', false);
+	d3.select(this).classed('dothovered', true);
 }
 
 function showTooltip(d) {
@@ -565,7 +565,6 @@ function mouseOut() {
 function clicked(){
  	//unhover
  	d3.select('.hovered').classed('hovered', false);
-
  	//handle click
  	setSelected(this);
 }
@@ -638,7 +637,10 @@ function zoomed() {
 function setYear(y) {
  	console.log("Selected year is set to: " + y);
 	selected_year = y;
-	// drawWorldMap();
+	// update slider
+	slider.value = selected_year;	
+	// update world map
+	d3.selectAll("path").style("fill", colorScale)
 	// 2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
@@ -684,7 +686,6 @@ function resize() {
 	d3.select("g").remove();
 	
 	drawWorldMap();
-
 	
 	//Scatterplot axes
 	x.range([0, svgInnerHalfWidth]);
@@ -700,7 +701,6 @@ function resize() {
 	
 	xAxisDBC.scale(xDualBarChart);
 	yAxisDBC.scale(yDualBarChart);
-	
 
 	//2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
@@ -737,7 +737,6 @@ d3.select(window).on("resize", resize);
 slider.oninput = function() {
 	output.innerHTML = this.value;
 	setYear(Number(this.value));
-	d3.selectAll("path").style("fill", colorScale)
 }
 
 function yearToIndex(year){

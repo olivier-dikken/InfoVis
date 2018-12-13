@@ -23,7 +23,7 @@ svg {
   stroke: blue;
 }
 
-.dothovered {
+.countrydothovered {
   stroke: green;
 }
 
@@ -61,6 +61,10 @@ svg {
 
 .dotscountry2 {
 	fill: blue;
+}
+
+.dothovered {
+	fill: green;
 }
 
 div.tooltip {
