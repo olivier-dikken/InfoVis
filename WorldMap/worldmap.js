@@ -22,6 +22,12 @@ var EndYear = 2018;
 var CurrentYear = EndYear;
 var xArray = Array.range(StartYear, EndYear);
 
+// Slider init
+var slider = document.getElementById("year_slider");
+var output = document.getElementById("year_value");
+var selected_year = Number(slider.value)
+output.innerHTML = slider.value; // Display the default slider value
+
 
 //view settings
 //TopPanel height is hardcoded in css to 80px
@@ -459,11 +465,9 @@ function colorScale(d){
 	var countryCode = d.id
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
 	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
-	// 66 is year 2017
-	var year = 66;
 	if(countryData[countryCode]){
 		if(countryData[countryCode]["Refugees_Total"]){
-			value = countryData[countryCode]["Refugees_Total"][year];
+			value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
 			return colors(value);
 		}
 		else{
@@ -661,6 +665,17 @@ function initOptions(indicatorNamesList){
 }
 
 d3.select(window).on("resize", resize);
+
+slider.oninput = function() {
+	output.innerHTML = this.value;
+	selected_year = Number(this.value);
+	d3.selectAll("path").style("fill", colorScale)
+}
+
+function yearToIndex(year){
+	// Only works if 1951 is index 0 and 2017 is index 66
+	return year - 1951;
+}
 
 // could also make this into an event listener maybe?
 function waitForElement(){

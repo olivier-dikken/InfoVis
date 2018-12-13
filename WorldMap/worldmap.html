@@ -11,7 +11,11 @@
     <body>
     	<!-- TopPanel used for controls -->
     	<div id="TopPanel" style="display: flex; align-items: center;">
-    		<button onclick="resetCountrySelection()">Reset</button>
+			<button onclick="resetCountrySelection()">Reset</button>
+			<div class="slidecontainer">
+				<input type="range" min="1951" max="2017" value="1"  id="year_slider">
+				<p>Value: <span id="year_value"></span></p>
+			  </div>
     		<div style="margin-left: 10px; display: flex; align-items: center;">
     			<p>Primary Indicator:</p>
 	    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
