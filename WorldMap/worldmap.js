@@ -453,7 +453,7 @@ function colorScale(d){
 	if (d != null) {
 		var countryCode = d.id
 		// var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = d3.scaleQuantize().domain(domain).range(d3.schemeYlGnBu[9]);	
+		var colors = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
 		// var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);			
 		if(countryData[countryCode]){
 			if(countryData[countryCode]["Refugees_Total"]){
