@@ -807,6 +807,34 @@ function yearToIndex(year){
 	return year - 1951;
 }
 
+var timer = undefined;
+
+function stop() {
+    clearInterval(timer);
+    timer = undefined;
+    d3.select("button.play").text("Play");
+}
+
+function play() {
+	if (timer) { stop(); return; };
+	if (selected_year == EndYear) {
+		selected_year = StartYear;
+	}
+	d3.select("button.play").text("Stop");
+	var advance = function() {
+		if (selected_year == EndYear) {
+			// stop at endyear
+			stop();
+			return;
+		} else {
+			// else advance
+			setYear(selected_year+1);
+		}
+	};
+	advance();
+	timer = setInterval(advance, 100);
+}
+
 // could also make this into an event listener maybe?
 function waitForElement(){
     if(typeof countryData !== "undefined"){
