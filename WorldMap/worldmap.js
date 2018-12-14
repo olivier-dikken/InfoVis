@@ -429,14 +429,14 @@ function drawWorldMap() {
 		.attr("class", "legend");
 
 	var colorsFunction = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
-	console.log(colorsFunction.range());
+	
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
 		.attr("x", 20)
 		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
 		.attr("width", ls_w)
 		.attr("height", ls_h)
-		.style("fill", function(d, i) { return colorsFunction.range()[i]; });
+		.style("fill", function(d, i) { return colorsFunction.range()[i+1]; });
 
 	legend.append("text")
 		.attr("x", 50)
