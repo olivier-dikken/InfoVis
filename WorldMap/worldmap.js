@@ -817,13 +817,13 @@ function stop() {
 
 function play() {
 	if (timer) { stop(); return; };
-	if (selected_year == EndYear) {
+	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
 	}
 	d3.select("button.play").text("Stop");
 	var advance = function() {
-		if (selected_year == EndYear) {
-			// stop at endyear
+		if (selected_year == EndYear - 1) {
+			// stop at endyear - 1
 			stop();
 			return;
 		} else {
