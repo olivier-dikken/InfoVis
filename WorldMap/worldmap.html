@@ -7,37 +7,46 @@
 		<script src="d3.geomap.dependencies.min.js"></script>
 		<script src="d3.geomap.min.js"></script>
 		<script src="topojson.v3.min.js"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     </head>
     <body>
     	<!-- TopPanel used for controls -->
     	<div id="TopPanel" style="display: flex; align-items: center;">
-    		<button onclick="resetCountrySelection()">Reset</button>
+    		<button type="button" onclick="resetCountrySelection()" class="btn btn-info" style="margin-left: 10px;"><span class="glyphicon glyphicon-refresh" style="margin-right: 5px;"></span>Reset Selection</button>
 			<div class="slider_container">
 				<span id="year_value"></span>
 				<input type="range" min="1951" max="2017" value="1" id="year_slider">
 			</div>
-    		<div style="margin-left: 10px; display: flex; align-items: center;">
-    			<p>Primary Indicator:</p>
-	    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()"></select>
-    		</div>
-    		<div style="margin-left: 10px; display: flex; align-items: center;">
-    			<p>Secondary Indicator:</p>
-    			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()"></select>
-    		</div>
     		<div id="SelectedCountries" style="margin-left: 40px;">
     			<p><strong>Selection: </strong><span style="color: red" id="SelectedCountry_1"></span> vs <span style="color: blue" id="SelectedCountry_2"></span></p><p id="SelectedYear"></p>
     		</div>
-    		<div>
-	    		<!-- Rounded switch -->
-				<label class="switch">
-				  <input type="checkbox">
-				  <span class="slider round"></span>
-				</label>
-			</div>
     	</div>
         <div id="map" style="float:left;"></div>
         <div id="rightPanel" style="float:right">
-	        <div id="versus"></div>
+	        <div id="versus" style="border-top: 2px solid purple">
+	    		<div style="display: flex; align-items: center;">
+	    			<!-- Indicator Selection -->
+	    			<p><strong>Indicators</strong></p>
+		    		<div style="margin-left: 10px; display: flex; align-items: center;">
+		    			<p>Primary:</p>
+			    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
+		    		</div>
+		    		<div style="margin-left: 10px; display: flex; align-items: center;">
+		    			<p>Secondary:</p>
+		    			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
+		    		</div>
+		    		<!-- Rounded switch -->
+		    		<div style="display: flex; align-items: center; margin-left: 50px;">
+						<label class="switch">
+						  <input type="checkbox" id="ToggleCheckbox" onchange="updateToggle()">
+						  <span class="slider round"></span>
+						</label>
+					    <p id="ToggleStatus" style="margin-left: 10px;"></p>
+					</div>
+				</div>
+	        </div>
 	        <div id="comparison"></div>
 	    </div>
 		<script type="text/javascript" src="worldmap.js"></script>
