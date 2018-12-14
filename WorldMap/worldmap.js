@@ -115,10 +115,9 @@ var svgComparison = d3.select("#svgComparison")
 //set default country coloring
 var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 
-//set min/max values for refugees indicator to determine scale
+//get domain values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
-var minValue = Number.MAX_VALUE
-var maxValue = Number.MIN_VALUE
+var domain = [];
 
 var countryData; // store data.json
 var worldData; // store countries.topo.json
@@ -126,26 +125,12 @@ var worldData; // store countries.topo.json
 d3.json("resources/data.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
-	console.log(data)
-	for (var keyCountry in data){
-		var regex = "Refugees_Total";
-		for(var indicator in data[keyCountry]){
-			if(indicator.match(regex)){
-				// 66 is year 20
-				year = 66;
-				value = data[keyCountry][indicator][year];
-				if(value === null) continue;
-				if(value < minValue){
-					minValue = value;
-				}
-				if(value > maxValue){
-					maxValue = value;
-				}
-			}				
-		}		
-	}
-	console.log(maxValue);
-	console.log(minValue);
+	console.log(countryData)
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c][indicator_primary] != undefined) {
+			domain.push(countryData[c][indicator_primary][selected_year - StartYear]);
+		}
+	});
 });
 
 d3.json("countries.topo.json", function(error, world) {
@@ -447,9 +432,8 @@ function drawWorldMap() {
 		.enter().append("g")
 		.attr("class", "legend");
 
-  
 	var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-	var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+	var colorsFunction = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);	
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
 		.attr("x", 20)
@@ -469,7 +453,8 @@ function colorScale(d){
 	if (d != null) {
 		var countryCode = d.id
 		var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
+		var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);	
+		// var colors = d3.scaleQuantile().domain(domain).range(rangeColors);			
 		if(countryData[countryCode]){
 			if(countryData[countryCode]["Refugees_Total"]){
 				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
