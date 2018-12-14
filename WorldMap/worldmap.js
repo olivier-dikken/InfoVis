@@ -121,7 +121,7 @@ var minValue = Number.MAX_VALUE
 var maxValue = Number.MIN_VALUE
 
 var countryData; // store data.json
-var worldData; //store countries.topo.json
+var worldData; // store countries.topo.json
 
 d3.json("resources/data.json", function(error, data){
 	if(error) return console.error(error);	
@@ -297,9 +297,21 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.on("mouseover", barHovered); 	
 }
 
-function drawScatterplot(d1, d2) {
-	var data = [];
+function drawScatterplot() {
 	
+	var d1 = {}; // primary indicators
+	var d2 = {}; // secondary indicators
+	var data = [];
+
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c][indicator_primary] != undefined) {
+			d1[c] = countryData[c][indicator_primary][selected_year - StartYear]
+		}
+		if (countryData[c][indicator_secondary] != undefined) {
+			d2[c] = countryData[c][indicator_secondary][selected_year - StartYear]
+		}
+	});
+
 	Object.keys(d1).map(function(c) { 
 		if(!isNaN(d1[c]) && d1[c] != null && !isNaN(d2[c]) && d2[c] != null) {
 			var item = {indicator_primary: d1[c], indicator_secondary: d2[c], ISO_code: c};
@@ -389,21 +401,8 @@ function visualizeData(c1, c2){
 		data_2_secondary = countryData[c2][indicator_secondary];
 		hasData_2 = true;
 	}
-
-	var primaryindicators = {};
-	var secondaryindicators = {};
-
-	Object.keys(countryData).map(function(c) { 
-		if (countryData[c][indicator_primary] != undefined) {
-			primaryindicators[c] = countryData[c][indicator_primary][selected_year - StartYear]
-		}
-		if (countryData[c][indicator_secondary] != undefined) {
-			secondaryindicators[c] = countryData[c][indicator_secondary][selected_year - StartYear]
-		}
-	});
 	
 	if(hasData_1 || hasData_2){
-		drawScatterplot(primaryindicators, secondaryindicators);
 		drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary);
 	} else {
 		//notify user no data
@@ -490,8 +489,12 @@ function colorScale(d){
 }
 	
 function colorDots(d) { 
-	if (d.ISO_code == selectedCountries[0].id) {
+	if (selectedCountries[0] == null) {
+		return "";
+	} else if (d.ISO_code == selectedCountries[0].id) {
 		return "dotscountry1";
+	} else if (selectedCountries[1] == null) {
+		return "";
 	} else if (d.ISO_code == selectedCountries[1].id) {
 		return "dotscountry2";
 	} else {
@@ -500,7 +503,9 @@ function colorDots(d) {
 }
 
 function dotRadius(d) { 
-	if (d.ISO_code == selectedCountries[0].id || d.ISO_code == selectedCountries[1].id) {
+	if (selectedCountries[0] == null || selectedCountries[1] == null) {
+		return 3.5;
+	} else if (d.ISO_code == selectedCountries[0].id || d.ISO_code == selectedCountries[1].id) {
 		return 7;
 	} else {
 		return 3.5;
@@ -560,6 +565,9 @@ function mouseOut() {
 	tooltip.classed("hidden", true);
 	//unhover
  	d3.select('.hovered').classed('hovered', false);
+	// unhighlight dot in scatterplot
+	d3.select("[countryCode=" + this.id + "]").classed('dothovered', false);
+	d3.select("[countryCode=" + this.id + "]").attr('r', 3.5);
 }
 
 function clicked(){
@@ -580,7 +588,7 @@ function resetCountrySelection(){
 		}
 	})
 	selectedCountries = [null, null];
-	svgScatter.selectAll("g").remove();
+	drawScatterplot();
 	svgComparison.selectAll("g").remove();
 }
 
@@ -606,6 +614,7 @@ function setSelected(element){
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		drawScatterplot();
 	}
 }
 
@@ -613,6 +622,10 @@ function hovered(){
 	if(d3.select(this).classed('selected')){
 		return;
 	} 
+	// highlight corresponding dot in scatterplot
+	d3.select("[countryCode=" + this.id + "]").classed('dothovered', true);
+	d3.select("[countryCode=" + this.id + "]").attr('r', 7);
+	// highlight country in worldmap
 	d3.select('.hovered').classed('hovered', false);
 	d3.select(this).classed('hovered', true);
 }
@@ -646,6 +659,7 @@ function setYear(y) {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
+	drawScatterplot();
 }
 
 function barHovered() {
@@ -690,11 +704,10 @@ function resize() {
 	
 	//Scatterplot axes
 	x.range([0, svgInnerHalfWidth]);
-	y1.range([svgInnerHalfHeight, 0]);
-	y2.range([svgInnerHalfHeight, 0]);
+	y.range([svgInnerHalfHeight, 0]);
 	
 	xAxis.scale(x);
-	yAxis.scale(y1);
+	yAxis.scale(y);
 	
 	//Dual bar chart axes
 	xDualBarChart.rangeRound([0, svgInnerHalfWidth]);
@@ -707,6 +720,7 @@ function resize() {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
+	drawScatterplot();
 }
 
 function initOptions(indicatorNamesList){
@@ -748,6 +762,7 @@ function yearToIndex(year){
 function waitForElement(){
     if(typeof countryData !== "undefined"){
 		drawWorldMap();
+		drawScatterplot();
     }
     else{
         setTimeout(waitForElement, 10);
