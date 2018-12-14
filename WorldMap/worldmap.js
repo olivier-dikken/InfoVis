@@ -419,34 +419,29 @@ function drawWorldMap() {
 			.attr("style",  countryStyle)
 			.style("fill", colorScale);	
 				
-	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-	var intervals = []
- 
-	for(var i = 0; i < 6; i++){
-		var limit = (500000) * i;
-		intervals.push(limit);
-	}
+	intervals = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]).quantiles();
+	intervalsrounded = intervals.map(function(d) { return Math.round(d) });
+
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
-		.data(intervals)
+		.data(intervalsrounded)
 		.enter().append("g")
 		.attr("class", "legend");
 
-	var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-	var colorsFunction = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);	
+	var colorsFunction = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+	console.log(colorsFunction.range());
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
 		.attr("x", 20)
 		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
 		.attr("width", ls_w)
 		.attr("height", ls_h)
-		.style("fill", function(d, i) { return colorsFunction(d); })
-		.style("opacity", 0.8);
+		.style("fill", function(d, i) { return colorsFunction.range()[i]; });
 
 	legend.append("text")
 		.attr("x", 50)
 		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
-		.text(function(d, i){ return intervals[i]; });
+		.text(function(d, i){ return intervalsrounded[i]; });
 }
 
 function colorScale(d){	
