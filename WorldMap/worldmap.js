@@ -359,8 +359,6 @@ function drawScatterplot() {
 	.selectAll(".dot")
 		.data(data)
     .enter().append("circle")
-		.attr("class", "dot")
-		.attr("class", "dotscountry1")
 		.attr("r", dotRadius)
 		.attr("cx", function(d) { return x(d.indicator_primary); })
 		.attr("cy", function(d) { return y(d.indicator_secondary); })
@@ -490,15 +488,15 @@ function colorScale(d){
 	
 function colorDots(d) { 
 	if (selectedCountries[0] == null) {
-		return "";
+		return "dot";
 	} else if (d.ISO_code == selectedCountries[0].id) {
-		return "dotscountry1";
+		return "dot dotscountry1";
 	} else if (selectedCountries[1] == null) {
 		return "";
 	} else if (d.ISO_code == selectedCountries[1].id) {
-		return "dotscountry2";
+		return "dot dotscountry2";
 	} else {
-		return "";
+		return "dot";
 	}
 }
 
@@ -546,9 +544,17 @@ function dotMouseOut(d) {
 	}
 }
 
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
 function dotHovered(){
 	d3.select('.dothovered').classed('dothovered', false);
 	d3.select(this).classed('dothovered', true);
+	// move dot to front
+	d3.select(this).moveToFront();
 }
 
 function showTooltip(d) {
@@ -567,12 +573,14 @@ function mouseOut() {
  	d3.select('.hovered').classed('hovered', false);
 	// unhighlight dot in scatterplot
 	d3.select("[countryCode=" + this.id + "]").classed('dothovered', false);
-	d3.select("[countryCode=" + this.id + "]").attr('r', 3.5);
+	if(!(d3.select(this).classed('selected_1') || d3.select(this).classed('selected_2'))){
+		d3.select("[countryCode=" + this.id + "]").attr('r', 3.5);
+	} 
 }
 
 function clicked(){
  	//unhover
- 	d3.select('.hovered').classed('hovered', false);
+ 	d3.select('.hovered').classed('hovered', false);	
  	//handle click
  	setSelected(this);
 }
@@ -604,17 +612,25 @@ function setSelected(element){
 		// console.log(selectedCountries[0]);
 		d3.select(selectedCountries[0]).classed('selected_1', true);
 		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
+		// highlight dot country1 in scatterplot
+		d3.select("[countryCode=" + selectedCountries[0].id + "]").classed('dotscountry1', true);
+		d3.select("[countryCode=" + selectedCountries[0].id + "]").attr('r', 7);
 	} else {//if 1st country selected set 2nd selection
 		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
 			d3.select(selectedCountries[1]).classed('selected_2', false);
 			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
+			// unhighlight country2 in scatterplot
+			d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', false);
+			d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 3.5);
 		}
 		selectedCountries[1] = element;
 		document.getElementById("SelectedCountry_2").innerHTML = selectedCountries[1].__data__.properties.name;
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
-		drawScatterplot();
+		// highlight dot country2 in scatterplot
+		d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', true);
+		d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 7);
 	}
 }
 
@@ -625,6 +641,8 @@ function hovered(){
 	// highlight corresponding dot in scatterplot
 	d3.select("[countryCode=" + this.id + "]").classed('dothovered', true);
 	d3.select("[countryCode=" + this.id + "]").attr('r', 7);
+	// move country dot to front
+	d3.select("[countryCode=" + this.id + "]").moveToFront();
 	// highlight country in worldmap
 	d3.select('.hovered').classed('hovered', false);
 	d3.select(this).classed('hovered', true);
