@@ -11,6 +11,8 @@ var multiplyInicatorList = ["Population density (people per sq. km of land area)
 var selectPrimary;
 var selectSecondary;
 var selectedCountries = [null, null];
+var doNorm = false;
+document.getElementById("ToggleCheckbox").checked = doNorm;
 //add options to drowdowns
 initOptions(indicatorList);
 
@@ -27,7 +29,7 @@ output.innerHTML = slider.value; // Display the default slider value
 
 //view settings
 //TopPanel height is hardcoded in css to 80px
-var TopPanelHeight = 80;
+var TopPanelHeight = 60;
 var margin = {top: TopPanelHeight, right: 20, bottom: 30, left: 40};
 var svgMargin = {top: 30, right: 30, bottom: 50, left: 80};
 var viewWidth = window.innerWidth - (margin.right + margin.left);
@@ -99,7 +101,7 @@ var xAxisDBC = d3.axisBottom()
 	
 var yAxisDBC = d3.axisLeft()
 	.scale(yDualBarChart)
-	.ticks(4);
+	.ticks(6);
 
 d3.select("#versus").append("svg")
 	.attr("id", "svgComparison")
@@ -144,8 +146,6 @@ d3.json("resources/data.json", function(error, data){
 			}				
 		}		
 	}
-	console.log(maxValue);
-	console.log(minValue);
 });
 
 d3.json("countries.topo.json", function(error, world) {
@@ -157,14 +157,16 @@ d3.json("countries.topo.json", function(error, world) {
 function updatePrimaryIndicator(){
 	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
 	if(newIndicatorName == indicator_primary){
-		console.log("This indicator is already set as primary indicator.")
+		console.log("This indicator is already set as primary indicator.");
 		return;
 	} else if(newIndicatorName == indicator_secondary){
 		console.log("Cannot select same indicator as secondary indicator.");
+		return;
 	}
 	//if newindicator exists display in html and set indicator_primary
 	if(indicatorList.includes(newIndicatorName)){
 		indicator_primary = newIndicatorName;
+		updateToggle();
 		for(i = 0; i < selectSecondary.options.length; i++){
 			var element = selectSecondary.options[i].value;
 			if(element == indicator_primary){
@@ -186,10 +188,12 @@ function updateSecondaryIndicator(){
 		return;
 	} else if(newIndicatorName == indicator_primary){
 		console.log("Cannot select same indicator as primary indicator.");
+		return; 
 	}
 	//if newindicator exists display in html and set indicator_secondary
 	if(indicatorList.includes(newIndicatorName)){
 		indicator_secondary = newIndicatorName;
+		updateToggle();
 		for(i = 0; i < selectPrimary.options.length; i++){
 			var element = selectPrimary.options[i].value;
 			if(element == indicator_secondary){
@@ -213,34 +217,38 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 	var d2 = new Array(dp2.length);
 	
 	for (var i = 0; i < d1.length; i++) {
-		if(!isNaN(dp1[i]) && dp1[i] != null && !isNaN(ds1[i]) && ds1[i] != null){
-			if(multiplyInicatorList.includes(indicator_secondary)){
-				var item = {"pval": dp1[i], "sval": 1/ds1[i], "year": xArray[i]};
+		if(!isNaN(dp1[i]) && dp1[i] != null && (!doNorm || (!isNaN(ds1[i]) && ds1[i] != null) ) ){
+			var item = {"pval": dp1[i], "sval": ds1[i], "year": xArray[i]};
+			if(!doNorm){
+				item.computed = item.pval;
 			} else {
-				var item = {"pval": dp1[i], "sval": ds1[i], "year": xArray[i]};
+				if(multiplyInicatorList.includes(indicator_secondary)){
+					item.computed =  item.pval * item.sval;
+				} else {
+					item.computed =  item.pval / item.sval;
+				}
 			}
 			data1.push(item);
-			d1[i] = item.pval/item.sval;
-		} else {
-			d1[i] = null;
-		}
-		if(!isNaN(dp2[i]) && dp2[i] != null && !isNaN(ds2[i]) && ds2[i] != null){
-			if(multiplyInicatorList.includes(indicator_secondary)){
-				var item = {"pval": dp2[i], "sval": 1/ds2[i], "year": xArray[i]};
+		} 
+		if(!isNaN(dp2[i]) && dp2[i] != null && (!doNorm || (!isNaN(ds2[i]) && ds2[i] != null) ) ){
+			var item = {"pval": dp2[i], "sval": ds2[i], "year": xArray[i]};
+			if(!doNorm){
+				item.computed = item.pval;
 			} else {
-				var item = {"pval": dp2[i], "sval": ds2[i], "year": xArray[i]};
+				if(multiplyInicatorList.includes(indicator_secondary)){
+					item.computed =  item.pval * item.sval;
+				} else {
+					item.computed =  item.pval / item.sval;
+				}
 			}
 			data2.push(item);
-			d2[i] = dp2[i]*ds2[i];
-		} else {
-			d2[i] = null;
-		}
+		} 
 	}
 
 	//var xExtent = d3.extent(xArray, function(d) { return d; });
 	var xExtent = xArray.map(function(d) { return d; });
-	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
-	var yExtent = d3.extent(d1.concat(d2).concat([0]), function(d) { return d; });
+	//var yExtent = d3.extent(d1, function(d) { return d; });
+	var yExtent = d3.extent(data1.concat(data2).concat({"computed": 0}), function(d) { return d.computed; });
 
 	//xDualBarChart.domain(xExtent).nice(); // gives an error
 	xDualBarChart.domain(xExtent);
@@ -274,8 +282,8 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.attr("width", xDualBarChart.bandwidth()/2)
 		//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
 		//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.pval/d.sval)); })
-		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.pval/d.sval) - yDualBarChart(0)); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -289,8 +297,8 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.attr("class", "bar2")
 		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
 		.attr("width", xDualBarChart.bandwidth()/2)
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.pval/d.sval)); })
-		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.pval/d.sval) - yDualBarChart(0)); })
+		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+		.attr("height", function(d,i,j)  { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
 		.attr("year", function(d) { return d.year; })
 		.on("click", function(d) { setYear(d.year) })
 		.on("mouseout",  barMouseOut)
@@ -741,6 +749,27 @@ function resize() {
 	drawScatterplot();
 }
 
+function updateToggle() {
+	var prevDoNorm = doNorm;
+	doNorm = document.getElementById("ToggleCheckbox").checked;
+	var abbrLength = {"long": 16, "short": 10};
+
+	if(doNorm){
+		var sign = "/";
+		if(multiplyInicatorList.includes(indicator_secondary))
+			sign = "*";
+		document.getElementById("ToggleStatus").innerHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";	
+	} else {
+		document.getElementById("ToggleStatus").innerHTML = indicator_primary.substr(0, abbrLength.long) + " per Year";
+	}
+
+	if(prevDoNorm != doNorm){
+		if(selectedCountries[1] != null)
+			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+	}
+	
+}
+
 function initOptions(indicatorNamesList){
 	var excludeSecondary = ["Refugees_Total"];
 
@@ -763,6 +792,8 @@ function initOptions(indicatorNamesList){
 
 	updatePrimaryIndicator();
 	updateSecondaryIndicator();
+
+	updateToggle();
 }
 
 d3.select(window).on("resize", resize);
