@@ -115,10 +115,9 @@ var svgComparison = d3.select("#svgComparison")
 //set default country coloring
 var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 
-//set min/max values for refugees indicator to determine scale
+//get domain values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
-var minValue = Number.MAX_VALUE
-var maxValue = Number.MIN_VALUE
+var domain = [];
 
 var countryData; // store data.json
 var worldData; // store countries.topo.json
@@ -126,24 +125,13 @@ var worldData; // store countries.topo.json
 d3.json("resources/data.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
-	console.log(data)
-	for (var keyCountry in data){
-		var regex = "Refugees_Total";
-		for(var indicator in data[keyCountry]){
-			if(indicator.match(regex)){
-				// 66 is year 20
-				year = 66;
-				value = data[keyCountry][indicator][year];
-				if(value === null) continue;
-				if(value < minValue){
-					minValue = value;
-				}
-				if(value > maxValue){
-					maxValue = value;
-				}
-			}				
-		}		
+	console.log(countryData)
 	}
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c][indicator_primary] != undefined) {
+			domain.push(countryData[c][indicator_primary][selected_year - StartYear]);
+		}
+	});
 });
 
 d3.json("countries.topo.json", function(error, world) {
@@ -459,42 +447,37 @@ function drawWorldMap() {
 			.attr("style",  countryStyle)
 			.style("fill", colorScale);	
 				
-	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-	var intervals = []
- 
-	for(var i = 0; i < 6; i++){
-		var limit = (500000) * i;
-		intervals.push(limit);
-	}
+	intervals = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]).quantiles();
+	intervalsrounded = intervals.map(function(d) { return Math.round(d) });
+
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
-		.data(intervals)
+		.data(intervalsrounded)
 		.enter().append("g")
 		.attr("class", "legend");
 
-  
-	var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-	var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+	var colorsFunction = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+	
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
 		.attr("x", 20)
 		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
 		.attr("width", ls_w)
 		.attr("height", ls_h)
-		.style("fill", function(d, i) { return colorsFunction(d); })
-		.style("opacity", 0.8);
+		.style("fill", function(d, i) { return colorsFunction.range()[i+1]; });
 
 	legend.append("text")
 		.attr("x", 50)
 		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
-		.text(function(d, i){ return intervals[i]; });
+		.text(function(d, i){ return intervalsrounded[i]; });
 }
 
 function colorScale(d){	
 	if (d != null) {
 		var countryCode = d.id
-		var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
+		// var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
+		var colors = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+		// var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);			
 		if(countryData[countryCode]){
 			if(countryData[countryCode]["Refugees_Total"]){
 				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
