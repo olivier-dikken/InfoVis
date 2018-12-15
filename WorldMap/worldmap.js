@@ -13,8 +13,6 @@ var selectSecondary;
 var selectedCountries = [null, null];
 var doNorm = false;
 document.getElementById("ToggleCheckbox").checked = doNorm;
-//add options to drowdowns
-initOptions(indicatorList);
 
 //init config
 var StartYear = 1951;
@@ -30,8 +28,8 @@ output.innerHTML = slider.value; // Display the default slider value
 //view settings
 //TopPanel height is hardcoded in css to 80px
 var TopPanelHeight = 60;
-var margin = {top: TopPanelHeight, right: 20, bottom: 30, left: 40};
-var svgMargin = {top: 30, right: 30, bottom: 50, left: 80};
+var margin = {top: TopPanelHeight, right: 20, bottom: 20, left: 20};
+var svgMargin = {top: 30, right: 30, bottom: 50, left: 70};
 var viewWidth = window.innerWidth - (margin.right + margin.left);
 var viewHeight = window.innerHeight - (margin.bottom + margin.top);
 
@@ -175,8 +173,10 @@ function updatePrimaryIndicator(){
 				selectSecondary.options[i].disabled = false;
 			}
 		}
-		if(selectedCountries[1] != null)
+		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		}
+		drawScatterplot();
 	}
 }
 
@@ -202,8 +202,10 @@ function updateSecondaryIndicator(){
 				selectPrimary.options[i].disabled = false;
 			}
 		}
-		if(selectedCountries[1] != null)
+		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		}
+		drawScatterplot();
 	}
 }
 		
@@ -255,22 +257,31 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 	yDualBarChart.domain(yExtent).nice();
 	
 	svgComparison.selectAll("g").remove();
+	svgComparison.selectAll("text").remove();
 	
 	svgComparison.append("g")
 		.attr("class", "x axis")
 		//.attr("transform", "translate(0," + halfHeight + ")")
 		.attr("transform", "translate(0," + yDualBarChart(0) + ")")
 		.call(xAxisDBC);
+	svgComparison.append("text")
+		.attr("class", "label")
+		.attr("id", "xLabel")
+		.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
+		.style("text-anchor", "start")
+		.text("Year");
+		
 	svgComparison.append("g")
 		.attr("class", "y axis axisLeft")
-		.attr("transform", "translate(0,0)")
-		.call(yAxisDBC)
-	.append("text")
-		.attr("y", 6)
-		.attr("dy", "-2em")
+		.call(yAxisDBC);
+	svgComparison.append("text")
+		.attr("class", "label")
+		.attr("id", "yLabel")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 0 - svgMargin.left)
+		.attr("dy", "1em")
 		.style("text-anchor", "end")
-		.style("text-anchor", "end")
-		.text("GDP growth");
+		.text(indicator_primary);
 		
 	svgComparison.append("g")
 		.attr("class", "bars1")
@@ -335,32 +346,34 @@ function drawScatterplot() {
 	y.domain(yExtent).nice();
 
 	svgScatter.selectAll("g").remove();
-
+	svgScatter.selectAll("text").remove();
+	
 	svgScatter.append("g")
 		.attr("id", "xAxis")
 		.attr("class", "x axis")
 		.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
-		.call(xAxis)
-	.append("text")
+		.call(xAxis);
+		
+	svgScatter.append("text")
 		.attr("class", "label")
 		.attr("id", "xLabel")
-		.attr("x", svgInnerHalfWidth)
-		.attr("y", -6)
-		.style("text-anchor", "end")
-		.text("gdpGrowth");
+		.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
+		.style("text-anchor", "start")
+		.text(indicator_primary);
 
 	svgScatter.append("g")
 		.attr("id", "yAxis")
 		.attr("class", "y axis")
-		.call(yAxis)
-	.append("text")
+		.call(yAxis);
+		
+	svgScatter.append("text")
 		.attr("class", "label")
 		.attr("id", "yLabel")
 		.attr("transform", "rotate(-90)")
-		.attr("y", 6)
-		.attr("dy", ".71em")
+		.attr("y", 0 - svgMargin.left)
+		.attr("dy", "1em")
 		.style("text-anchor", "end")
-		.text("y");
+		.text(indicator_secondary);
 
 	var points = svgScatter.append("g")
 		.attr("class", "plotArea")
@@ -376,6 +389,10 @@ function drawScatterplot() {
 		.on("mouseover", dotHovered)
 		.on("mouseout",  dotMouseOut);
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
+		
+	// move selected countrydots to front	
+	d3.select(".dotscountry1").moveToFront();
+	d3.select(".dotscountry2").moveToFront();
 }
 
 function visualizeData(c1, c2){
@@ -548,7 +565,9 @@ function dotMouseOut(d) {
 	country = document.getElementById(d.ISO_code);
 	if (country != null) {
 		country.classList.remove('countrydothovered');
-		country.setAttribute("stroke-width", 1/zoomk + "px");
+		if(country.id != selectedCountries[0].id && country.id != selectedCountries[1].id) { 
+			country.setAttribute("stroke-width", 1/zoomk + "px");
+		}
 	}
 }
 
@@ -579,11 +598,13 @@ function mouseOut() {
 	tooltip.classed("hidden", true);
 	//unhover
  	d3.select('.hovered').classed('hovered', false);
-	// unhighlight dot in scatterplot
-	d3.select("[countryCode=" + this.id + "]").classed('dothovered', false);
-	if(!(d3.select(this).classed('selected_1') || d3.select(this).classed('selected_2'))){
-		d3.select("[countryCode=" + this.id + "]").attr('r', 3.5);
-	} 
+	if (this.id != -99) {
+		// unhighlight dot in scatterplot
+		d3.select("[countryCode=" + this.id + "]").classed('dothovered', false);
+		if(!(d3.select(this).classed('selected_1') || d3.select(this).classed('selected_2'))){
+			d3.select("[countryCode=" + this.id + "]").attr('r', 3.5);
+		} 
+	}
 }
 
 function clicked(){
@@ -620,25 +641,31 @@ function setSelected(element){
 		// console.log(selectedCountries[0]);
 		d3.select(selectedCountries[0]).classed('selected_1', true);
 		d3.select(selectedCountries[0]).attr("stroke-width", 5/zoomk + "px");
-		// highlight dot country1 in scatterplot
-		d3.select("[countryCode=" + selectedCountries[0].id + "]").classed('dotscountry1', true);
-		d3.select("[countryCode=" + selectedCountries[0].id + "]").attr('r', 7);
+		if (selectedCountries[0].id != -99) {
+			// highlight dot country1 in scatterplot
+			d3.select("[countryCode=" + selectedCountries[0].id + "]").classed('dotscountry1', true);
+			d3.select("[countryCode=" + selectedCountries[0].id + "]").attr('r', 7);
+		}
 	} else {//if 1st country selected set 2nd selection
 		if(selectedCountries[1] !== null){ //if 2nd country selected then unselect and remove class
 			d3.select(selectedCountries[1]).classed('selected_2', false);
 			d3.select(selectedCountries[1]).attr("stroke-width", 1/zoomk + "px");
-			// unhighlight country2 in scatterplot
-			d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', false);
-			d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 3.5);
+			if (selectedCountries[1].id != -99) {
+				// unhighlight country2 in scatterplot
+				d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', false);
+				d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 3.5);
+			}
 		}
 		selectedCountries[1] = element;
 		document.getElementById("SelectedCountry_2").innerHTML = selectedCountries[1].__data__.properties.name;
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
-		// highlight dot country2 in scatterplot
-		d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', true);
-		d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 7);
+		if (selectedCountries[1].id != -99) {
+			// highlight dot country2 in scatterplot
+			d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', true);
+			d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 7);
+		}
 	}
 }
 
@@ -647,10 +674,12 @@ function hovered(){
 		return;
 	} 
 	// highlight corresponding dot in scatterplot
-	d3.select("[countryCode=" + this.id + "]").classed('dothovered', true);
-	d3.select("[countryCode=" + this.id + "]").attr('r', 7);
-	// move country dot to front
-	d3.select("[countryCode=" + this.id + "]").moveToFront();
+	if (this.id != -99) {
+		d3.select("[countryCode=" + this.id + "]").classed('dothovered', true);
+		d3.select("[countryCode=" + this.id + "]").attr('r', 7);
+		// move country dot to front
+		d3.select("[countryCode=" + this.id + "]").moveToFront();
+	}
 	// highlight country in worldmap
 	d3.select('.hovered').classed('hovered', false);
 	d3.select(this).classed('hovered', true);
@@ -674,7 +703,7 @@ function zoomed() {
 }
 
 function setYear(y) {
- 	console.log("Selected year is set to: " + y);
+ 	// console.log("Selected year is set to: " + y);
 	selected_year = y;
 	// update slider
 	output.innerHTML = selected_year;
@@ -838,6 +867,9 @@ function play() {
 // could also make this into an event listener maybe?
 function waitForElement(){
     if(typeof countryData !== "undefined"){
+		//add options to drowdowns
+		initOptions(indicatorList);
+
 		drawWorldMap();
 		drawScatterplot();
     }

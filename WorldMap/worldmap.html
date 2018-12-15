@@ -16,18 +16,18 @@
     	<div id="TopPanel" style="display: flex; align-items: center;">
     		<button type="button" onclick="resetCountrySelection()" class="btn btn-info" style="margin-left: 10px;"><span class="glyphicon glyphicon-refresh" style="margin-right: 5px;"></span>Reset Selection</button>
 			<button type="button" onclick="play()" class="btn btn-info play" style="margin-left: 10px;"><span style="margin-right: 5px;"></span>Play</button>
-			<div class="slider_container">
+			<div class="slider_container" style="text-align: center;">
 				<span id="year_value"></span>
 				<input type="range" min="1951" max="2017" value="1" id="year_slider">
 			</div>
     		<div id="SelectedCountries" style="margin-left: 40px;">
-    			<p><strong>Selection: </strong><span style="color: red" id="SelectedCountry_1"></span> vs <span style="color: blue" id="SelectedCountry_2"></span></p><p id="SelectedYear"></p>
+    			<p><strong>Selection: <span style="color: red" id="SelectedCountry_1"></span> vs <span style="color: blue" id="SelectedCountry_2"></span></p><p id="SelectedYear"></strong></p>
     		</div>
     	</div>
         <div id="map" style="float:left;"></div>
         <div id="rightPanel" style="float:right">
 	        <div id="versus" style="border-top: 2px solid purple">
-	    		<div style="display: flex; align-items: center;">
+	    		<div style="display: flex; align-items: center; max-width: 48vw;">
 	    			<!-- Indicator Selection -->
 	    			<p><strong>Indicators</strong></p>
 		    		<div style="margin-left: 10px; display: flex; align-items: center;">
@@ -39,7 +39,7 @@
 		    			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
 		    		</div>
 		    		<!-- Rounded switch -->
-		    		<div style="display: flex; align-items: center; margin-left: 50px;">
+		    		<div style="display: flex; align-items: center; margin-left: 20px;">
 						<label class="switch">
 						  <input type="checkbox" id="ToggleCheckbox" onchange="updateToggle()">
 						  <span class="slider round"></span>
