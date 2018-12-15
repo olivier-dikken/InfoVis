@@ -627,6 +627,7 @@ function resetCountrySelection(){
 	selectedCountries = [null, null];
 	drawScatterplot();
 	svgComparison.selectAll("g").remove();
+	svgComparison.selectAll("text").remove();
 }
 
 //behaviour: replace 2nd selection
