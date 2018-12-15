@@ -126,11 +126,10 @@ d3.json("resources/data.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
 	console.log(countryData)
-	}
 	Object.keys(countryData).map(function(c) { 
-		if (countryData[c][indicator_primary] != undefined) {
-			Object.keys(countryData[c][indicator_primary]).map(function(d) { 
-				domain.push(countryData[c][indicator_primary][d]);
+		if (countryData[c]["Refugees_Total"] != undefined) {
+			Object.keys(countryData[c]["Refugees_Total"]).map(function(d) { 
+				domain.push(countryData[c]["Refugees_Total"][d]);
 			});
 		}
 	});
