@@ -128,7 +128,9 @@ d3.json("resources/data.json", function(error, data){
 	console.log(countryData)
 	Object.keys(countryData).map(function(c) { 
 		if (countryData[c][indicator_primary] != undefined) {
-			domain.push(countryData[c][indicator_primary][selected_year - StartYear]);
+			Object.keys(countryData[c][indicator_primary]).map(function(d) { 
+				domain.push(countryData[c][indicator_primary][d]);
+			});
 		}
 	});
 });
