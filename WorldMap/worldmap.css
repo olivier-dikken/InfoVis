@@ -83,6 +83,10 @@ div.tooltip {
   fill-opacity: 1 !important;
 }
 .slider_container{
-  display: inline;
-  margin: 0 20px;
+  display: inline-block;
+  margin: 0px 50px;
+}
+
+#year_value, #year_slider{
+  float:left;
 }

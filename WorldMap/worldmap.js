@@ -428,12 +428,13 @@ function drawWorldMap() {
 						
 	});
 	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-var intervals = []
+	var logMax = Math.log(maxValue) / 7
+	var intervals = [minValue + 0.01, logMax]
  
-for(var i = 0; i < 6; i++){
-	var limit = (500000) * i;
+/*for(var i = 0; i < 2; i++){
+	var limit = (500) * i;
 	intervals.push(limit);
-}
+}*/
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
   .data(intervals)
@@ -442,7 +443,8 @@ for(var i = 0; i < 6; i++){
 
   
   var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-  var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+  
+  var colorsFunction = d3.scaleLinear().domain([minValue + 0.01]).range(rangeColors);	
   var ls_w = 20, ls_h = 20; var height = 200;
   legend.append("rect")
   .attr("x", 20)
@@ -463,11 +465,22 @@ for(var i = 0; i < 6; i++){
 }
 function colorScale(d){	
 	var countryCode = d.id
-	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-	var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
+	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"];
+	var colour_range = ["#6AE817","#FFA200", "#B30409"]
+	var test = [""]
+	var logMax = Math.log2(maxValue)
+	if(minValue == 0){
+		minValue = 0.01
+	}
+	var logMin = Math.log2(minValue);
+	var maxLinear = 250000
+	var colors = d3.scaleQuantile().domain([minValue,maxValue]).range(rangeColors);			
 	if(countryData[countryCode]){
 		if(countryData[countryCode]["Refugees_Total"]){
 			value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
+			if(Number(value) >=maxLinear){
+				console.log(value)
+			}
 			return colors(value);
 		}
 		else{
