@@ -165,7 +165,7 @@ function updatePrimaryIndicator(){
 		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 		}
-		drawScatterplot();
+		drawScatterplot(false);
 	}
 }
 
@@ -194,7 +194,7 @@ function updateSecondaryIndicator(){
 		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 		}
-		drawScatterplot();
+		drawScatterplot(false);
 	}
 }
 		
@@ -305,7 +305,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.on("mouseover", barHovered); 	
 }
 
-function drawScatterplot() {
+function drawScatterplot(transition) {
 	
 	var d1 = {}; // primary indicators
 	var d2 = {}; // secondary indicators
@@ -334,56 +334,93 @@ function drawScatterplot() {
 	x.domain(xExtent).nice();
 	y.domain(yExtent).nice();
 
-	svgScatter.selectAll("g").remove();
-	svgScatter.selectAll("text").remove();
-	
-	svgScatter.append("g")
-		.attr("id", "xAxis")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
-		.call(xAxis);
+	if(!transition) { //no transition
+		svgScatter.selectAll("g").remove();
+		svgScatter.selectAll("text").remove();
 		
-	svgScatter.append("text")
-		.attr("class", "label")
-		.attr("id", "xLabel")
-		.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
-		.style("text-anchor", "start")
-		.text(indicator_primary);
+		svgScatter.append("g")
+			.attr("id", "xAxis")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
+			.call(xAxis);
+			
+		svgScatter.append("text")
+			.attr("class", "label")
+			.attr("id", "xLabel")
+			.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
+			.style("text-anchor", "start")
+			.text(indicator_primary);
 
-	svgScatter.append("g")
-		.attr("id", "yAxis")
-		.attr("class", "y axis")
-		.call(yAxis);
-		
-	svgScatter.append("text")
-		.attr("class", "label")
-		.attr("id", "yLabel")
-		.attr("transform", "rotate(-90)")
-		.attr("y", 0 - svgMargin.left)
-		.attr("dy", "1em")
-		.style("text-anchor", "end")
-		.text(indicator_secondary);
+		svgScatter.append("g")
+			.attr("id", "yAxis")
+			.attr("class", "y axis")
+			.call(yAxis);
+			
+		svgScatter.append("text")
+			.attr("class", "label")
+			.attr("id", "yLabel")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 0 - svgMargin.left)
+			.attr("dy", "1em")
+			.style("text-anchor", "end")
+			.text(indicator_secondary);
 
-	var points = svgScatter.append("g")
-		.attr("class", "plotArea")
-	.selectAll(".dot")
-		.data(data)
-    .enter().append("circle")
-		.attr("r", dotRadius)
-		.attr("cx", function(d) { return x(d.indicator_primary); })
-		.attr("cy", function(d) { return y(d.indicator_secondary); })
-		.attr("countryCode", function(d) { return d.ISO_code; })
-		.attr("class", colorDots)
-		.on("mousemove", showDotTooltip)
-		.on("mouseover", dotHovered)
-		.on("mouseout",  dotMouseOut)
-		.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
-		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
-		
+		var points = svgScatter.append("g")
+			.attr("class", "plotArea")
+		.selectAll(".dot")
+			.data(data)
+	    .enter().append("circle")
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots)
+			.on("mousemove", showDotTooltip)
+			.on("mouseover", dotHovered)
+			.on("mouseout",  dotMouseOut)
+			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+			//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
+	}	else { //transition
+		var circle = svgScatter.selectAll("circle")
+			.data(data, function(d) { return d.ISO_code; });
+
+		circle.exit().remove();
+		circle.enter().append("circle")
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots)
+			.on("mousemove", showDotTooltip)
+			.on("mouseover", dotHovered)
+			.on("mouseout",  dotMouseOut)
+			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+
+
+		circle.transition()
+			.duration(1000)
+			.delay(function(d, i){return i / data.length * 100})
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots);
+
+		svgScatter.select(".x.axis")
+			.transition()
+			.duration(1000)
+			.call(xAxis)
+
+		svgScatter.select(".y.axis")
+			.transition()
+			.duration(1000)
+			.call(yAxis)
+	}
 	// move selected countrydots to front	
 	d3.select(".dotscountry1").moveToFront();
 	d3.select(".dotscountry2").moveToFront();
 }
+
 
 function visualizeData(c1, c2){
 	var TimeLength = EndYear - StartYear;
@@ -610,14 +647,13 @@ function resetCountrySelection(){
 		}
 	})
 	selectedCountries = [null, null];
-	drawScatterplot();
+	drawScatterplot(false);
 	svgComparison.selectAll("g").remove();
 	svgComparison.selectAll("text").remove();
 }
 
 //behaviour: replace 2nd selection
 function setSelected(element){
-	console.log(element);
 	if(selectedCountries[0] === element || selectedCountries[1] === element){
 		return;
 	}
@@ -701,7 +737,7 @@ function setYear(y) {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	drawScatterplot();
+	drawScatterplot(true);
 }
 
 function barHovered() {
@@ -762,7 +798,7 @@ function resize() {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	drawScatterplot();
+	drawScatterplot(false);
 }
 
 function updateToggle() {
@@ -858,7 +894,7 @@ function waitForElement(){
 		initOptions(indicatorList);
 
 		drawWorldMap();
-		drawScatterplot();
+		drawScatterplot(false);
     }
     else{
         setTimeout(waitForElement, 10);
