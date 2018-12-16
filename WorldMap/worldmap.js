@@ -376,7 +376,8 @@ function drawScatterplot() {
 		.attr("class", colorDots)
 		.on("mousemove", showDotTooltip)
 		.on("mouseover", dotHovered)
-		.on("mouseout",  dotMouseOut);
+		.on("mouseout",  dotMouseOut)
+		.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
 		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 		
 	// move selected countrydots to front	
@@ -549,7 +550,7 @@ function dotMouseOut(d) {
 	country = document.getElementById(d.ISO_code);
 	if (country != null) {
 		country.classList.remove('countrydothovered');
-		if(country.id != selectedCountries[0].id && country.id != selectedCountries[1].id) { 
+		if(selectedCountries[0] === null || (country.id != selectedCountries[0].id && (selectedCountries[1] === null || country.id != selectedCountries[1].id))) { 
 			country.setAttribute("stroke-width", 1/zoomk + "px");
 		}
 	}
@@ -616,6 +617,7 @@ function resetCountrySelection(){
 
 //behaviour: replace 2nd selection
 function setSelected(element){
+	console.log(element);
 	if(selectedCountries[0] === element || selectedCountries[1] === element){
 		return;
 	}
