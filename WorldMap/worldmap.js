@@ -115,10 +115,9 @@ var svgComparison = d3.select("#svgComparison")
 //set default country coloring
 var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 
-//set min/max values for refugees indicator to determine scale
+//get domain values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
-var minValue = Number.MAX_VALUE
-var maxValue = Number.MIN_VALUE
+var domain = [];
 
 var countryData; // store data.json
 var worldData; // store countries.topo.json
@@ -126,24 +125,14 @@ var worldData; // store countries.topo.json
 d3.json("resources/data.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
-	console.log(data)
-	for (var keyCountry in data){
-		var regex = "Refugees_Total";
-		for(var indicator in data[keyCountry]){
-			if(indicator.match(regex)){
-				// 66 is year 20
-				year = 66;
-				value = data[keyCountry][indicator][year];
-				if(value === null) continue;
-				if(value < minValue){
-					minValue = value;
-				}
-				if(value > maxValue){
-					maxValue = value;
-				}
-			}				
-		}		
-	}
+	console.log(countryData)
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c]["Refugees_Total"] != undefined) {
+			Object.keys(countryData[c]["Refugees_Total"]).map(function(d) { 
+				domain.push(countryData[c]["Refugees_Total"][d]);
+			});
+		}
+	});
 });
 
 d3.json("countries.topo.json", function(error, world) {
@@ -176,7 +165,7 @@ function updatePrimaryIndicator(){
 		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 		}
-		drawScatterplot();
+		drawScatterplot(false);
 	}
 }
 
@@ -205,7 +194,7 @@ function updateSecondaryIndicator(){
 		if(selectedCountries[1] != null) {
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 		}
-		drawScatterplot();
+		drawScatterplot(false);
 	}
 }
 		
@@ -316,7 +305,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.on("mouseover", barHovered); 	
 }
 
-function drawScatterplot() {
+function drawScatterplot(transition) {
 	
 	var d1 = {}; // primary indicators
 	var d2 = {}; // secondary indicators
@@ -345,55 +334,93 @@ function drawScatterplot() {
 	x.domain(xExtent).nice();
 	y.domain(yExtent).nice();
 
-	svgScatter.selectAll("g").remove();
-	svgScatter.selectAll("text").remove();
-	
-	svgScatter.append("g")
-		.attr("id", "xAxis")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
-		.call(xAxis);
+	if(!transition) { //no transition
+		svgScatter.selectAll("g").remove();
+		svgScatter.selectAll("text").remove();
 		
-	svgScatter.append("text")
-		.attr("class", "label")
-		.attr("id", "xLabel")
-		.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
-		.style("text-anchor", "start")
-		.text(indicator_primary);
+		svgScatter.append("g")
+			.attr("id", "xAxis")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + svgInnerHalfHeight + ")")
+			.call(xAxis);
+			
+		svgScatter.append("text")
+			.attr("class", "label")
+			.attr("id", "xLabel")
+			.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
+			.style("text-anchor", "start")
+			.text(indicator_primary);
 
-	svgScatter.append("g")
-		.attr("id", "yAxis")
-		.attr("class", "y axis")
-		.call(yAxis);
-		
-	svgScatter.append("text")
-		.attr("class", "label")
-		.attr("id", "yLabel")
-		.attr("transform", "rotate(-90)")
-		.attr("y", 0 - svgMargin.left)
-		.attr("dy", "1em")
-		.style("text-anchor", "end")
-		.text(indicator_secondary);
+		svgScatter.append("g")
+			.attr("id", "yAxis")
+			.attr("class", "y axis")
+			.call(yAxis);
+			
+		svgScatter.append("text")
+			.attr("class", "label")
+			.attr("id", "yLabel")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 0 - svgMargin.left)
+			.attr("dy", "1em")
+			.style("text-anchor", "end")
+			.text(indicator_secondary);
 
-	var points = svgScatter.append("g")
-		.attr("class", "plotArea")
-	.selectAll(".dot")
-		.data(data)
-    .enter().append("circle")
-		.attr("r", dotRadius)
-		.attr("cx", function(d) { return x(d.indicator_primary); })
-		.attr("cy", function(d) { return y(d.indicator_secondary); })
-		.attr("countryCode", function(d) { return d.ISO_code; })
-		.attr("class", colorDots)
-		.on("mousemove", showDotTooltip)
-		.on("mouseover", dotHovered)
-		.on("mouseout",  dotMouseOut);
-		//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
-		
+		var points = svgScatter.append("g")
+			.attr("class", "plotArea")
+		.selectAll(".dot")
+			.data(data)
+	    .enter().append("circle")
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots)
+			.on("mousemove", showDotTooltip)
+			.on("mouseover", dotHovered)
+			.on("mouseout",  dotMouseOut)
+			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+			//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
+	}	else { //transition
+		var circle = svgScatter.selectAll("circle")
+			.data(data, function(d) { return d.ISO_code; });
+
+		circle.exit().remove();
+		circle.enter().append("circle")
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots)
+			.on("mousemove", showDotTooltip)
+			.on("mouseover", dotHovered)
+			.on("mouseout",  dotMouseOut)
+			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+
+
+		circle.transition()
+			.duration(1000)
+			.delay(function(d, i){return i / data.length * 100})
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_primary); })
+			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots);
+
+		svgScatter.select(".x.axis")
+			.transition()
+			.duration(1000)
+			.call(xAxis)
+
+		svgScatter.select(".y.axis")
+			.transition()
+			.duration(1000)
+			.call(yAxis)
+	}
 	// move selected countrydots to front	
 	d3.select(".dotscountry1").moveToFront();
 	d3.select(".dotscountry2").moveToFront();
 }
+
 
 function visualizeData(c1, c2){
 	var TimeLength = EndYear - StartYear;
@@ -459,42 +486,37 @@ function drawWorldMap() {
 			.attr("style",  countryStyle)
 			.style("fill", colorScale);	
 				
-	var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-	var intervals = []
- 
-	for(var i = 0; i < 6; i++){
-		var limit = (500000) * i;
-		intervals.push(limit);
-	}
+	intervals = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]).quantiles();
+	intervalsrounded = intervals.map(function(d) { return Math.round(d) });
+
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
-		.data(intervals)
+		.data(intervalsrounded)
 		.enter().append("g")
 		.attr("class", "legend");
 
-  
-	var legend_labels = ["< 50", "50+", "150+", "350+", "750+", "> 1500"]
-	var colorsFunction = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);	
+	var colorsFunction = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+	
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
 		.attr("x", 20)
 		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
 		.attr("width", ls_w)
 		.attr("height", ls_h)
-		.style("fill", function(d, i) { return colorsFunction(d); })
-		.style("opacity", 0.8);
+		.style("fill", function(d, i) { return colorsFunction.range()[i+1]; });
 
 	legend.append("text")
 		.attr("x", 50)
 		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
-		.text(function(d, i){ return intervals[i]; });
+		.text(function(d, i){ return intervalsrounded[i]; });
 }
 
 function colorScale(d){	
 	if (d != null) {
 		var countryCode = d.id
-		var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = d3.scaleQuantile().domain([minValue, maxValue]).range(rangeColors);			
+		// var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
+		var colors = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+		// var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);			
 		if(countryData[countryCode]){
 			if(countryData[countryCode]["Refugees_Total"]){
 				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
@@ -565,7 +587,7 @@ function dotMouseOut(d) {
 	country = document.getElementById(d.ISO_code);
 	if (country != null) {
 		country.classList.remove('countrydothovered');
-		if(country.id != selectedCountries[0].id && country.id != selectedCountries[1].id) { 
+		if(selectedCountries[0] === null || (country.id != selectedCountries[0].id && (selectedCountries[1] === null || country.id != selectedCountries[1].id))) { 
 			country.setAttribute("stroke-width", 1/zoomk + "px");
 		}
 	}
@@ -625,8 +647,9 @@ function resetCountrySelection(){
 		}
 	})
 	selectedCountries = [null, null];
-	drawScatterplot();
+	drawScatterplot(false);
 	svgComparison.selectAll("g").remove();
+	svgComparison.selectAll("text").remove();
 }
 
 //behaviour: replace 2nd selection
@@ -714,7 +737,7 @@ function setYear(y) {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	drawScatterplot();
+	drawScatterplot(true);
 }
 
 function barHovered() {
@@ -775,7 +798,7 @@ function resize() {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	drawScatterplot();
+	drawScatterplot(false);
 }
 
 function updateToggle() {
@@ -871,7 +894,7 @@ function waitForElement(){
 		initOptions(indicatorList);
 
 		drawWorldMap();
-		drawScatterplot();
+		drawScatterplot(false);
     }
     else{
         setTimeout(waitForElement, 10);
