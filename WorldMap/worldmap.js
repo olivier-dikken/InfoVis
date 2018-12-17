@@ -49,6 +49,10 @@ var zoom = d3.zoom()
 	 .on("zoom", zoomed);
 //init global zoom variables
 var zoomk = 1;
+
+//gloabal settings
+var transitionSpeedMultiplier = 1;
+initSettings();
 		
 //offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -200,7 +204,7 @@ function updateSecondaryIndicator(){
 	}
 }
 		
-function drawDualBarChart(dp1, dp2, ds1, ds2) {
+function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 	//console.log("d1: " + d1);
 	//console.log("d2: " + d2);
 	var data1 = [];
@@ -247,77 +251,166 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 	xDualBarChart.domain(xExtent);
 	yDualBarChart.domain(yExtent).nice();
 	
-	svgComparison.selectAll("g").remove();
-	svgComparison.selectAll("text").remove();
-	
-	svgComparison.append("g")
-		.attr("class", "x axis")
-		//.attr("transform", "translate(0," + halfHeight + ")")
-		.attr("transform", "translate(0," + yDualBarChart(0) + ")")
-		.call(xAxisDBC);
-	svgComparison.append("text")
-		.attr("class", "label")
-		.attr("id", "xLabel")
-		.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
-		.style("text-anchor", "start")
-		.text("Year");
-		
-	svgComparison.append("g")
-		.attr("class", "y axis axisLeft")
-		.call(yAxisDBC);
 
-	var newIndicatorLabel = indicator_primary;
-	doNorm = document.getElementById("ToggleCheckbox").checked;
-	if(doNorm){
-		var abbrLength = {"long": 16, "short": 10};
-		var sign = "/";
-		if(multiplyInicatorList.includes(indicator_secondary))
-			sign = "*";
-		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
-	}
+	if(!transition){
+		svgComparison.selectAll("g").remove();
+		svgComparison.selectAll("text").remove();
 		
+		svgComparison.append("g")
+			.attr("class", "x axis")
+			//.attr("transform", "translate(0," + halfHeight + ")")
+			.attr("transform", "translate(0," + yDualBarChart(0) + ")")
+			.call(xAxisDBC);
+		svgComparison.append("text")
+			.attr("class", "label")
+			.attr("id", "xLabel")
+			.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
+			.style("text-anchor", "start")
+			.text("Year");
+			
+		svgComparison.append("g")
+			.attr("class", "y axis axisLeft")
+			.call(yAxisDBC);
 
-	svgComparison.append("text")
-		.attr("class", "label")
-		.classed("labelPrim", true)
-		.attr("id", "yLabel")
-		.attr("transform", "rotate(-90)")
-		.attr("y", 0 - svgMargin.left)
-		.attr("dy", "1em")
-		.style("text-anchor", "end")
-		.text(newIndicatorLabel);
-		
-	svgComparison.append("g")
-		.attr("class", "bars1")
-	.selectAll(".bar1")
-		.data(data1)
-	.enter().append("rect")
-		.attr("class", "bar1")
-		.attr("x", function(d) { return xDualBarChart(d.year); })
-		.attr("width", xDualBarChart.bandwidth()/2)
-		//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
-		//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
-		.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
-		.attr("year", function(d) { return d.year; })
-		.on("click", function(d) { setYear(d.year) })
-		.on("mouseout",  barMouseOut)
-		.on("mouseover", barHovered); 
-		
-	svgComparison.append("g")
-		.attr("class", "bars2")
-	.selectAll(".bar2")
-		.data(data2)
-	.enter().append("rect")
-		.attr("class", "bar2")
-		.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
-		.attr("width", xDualBarChart.bandwidth()/2)
-		.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
-		.attr("height", function(d,i,j)  { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
-		.attr("year", function(d) { return d.year; })
-		.on("click", function(d) { setYear(d.year) })
-		.on("mouseout",  barMouseOut)
-		.on("mouseover", barHovered); 	
+
+		//set correct yaxis label
+		var newIndicatorLabel = indicator_primary;
+		doNorm = document.getElementById("ToggleCheckbox").checked;
+		if(doNorm){
+			var abbrLength = {"long": 16, "short": 10};
+			var sign = "/";
+			if(multiplyInicatorList.includes(indicator_secondary))
+				sign = "*";
+			newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+		}
+
+		svgComparison.append("text")
+			.attr("class", "label")
+			.classed("labelPrim", true)
+			.attr("id", "yLabel")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 0 - svgMargin.left)
+			.attr("dy", "1em")
+			.style("text-anchor", "end")
+			.text(newIndicatorLabel);
+			
+		svgComparison
+		.selectAll(".bar1")
+			.data(data1)
+		.enter().append("rect")
+			.attr("class", "bar1")
+			.attr("x", function(d) { return xDualBarChart(d.year); })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
+			//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.on("click", function(d) { setYear(d.year) })
+			.on("mouseout",  barMouseOut)
+			.on("mouseover", barHovered); 
+			
+		svgComparison
+		.selectAll(".bar2")
+			.data(data2)
+		.enter().append("rect")
+			.attr("class", "bar2")
+			.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j)  { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.on("click", function(d) { setYear(d.year) })
+			.on("mouseout",  barMouseOut)
+			.on("mouseover", barHovered);
+	} else {//transition
+		var	transitionTime = 1500 / transitionSpeedMultiplier;
+
+		var bars1 = svgComparison.selectAll(".bar1")
+			.data(data1, function(d){ return d.year});
+
+		var bars2 = svgComparison.selectAll(".bar2")
+			.data(data2, function(d){ return d.year});
+
+
+		bars1.enter()
+			.append("rect")
+			.attr("class", "bar1")
+			.attr("x", function(d) { return xDualBarChart(d.year); })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
+			//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.on("click", function(d) { setYear(d.year) })
+			.on("mouseout",  barMouseOut)
+			.on("mouseover", barHovered)
+			.attr("opacity", 0)
+			.transition()
+			.duration(transitionTime)
+			.attr("opacity", 1);
+
+		bars1.interrupt()
+			.transition()
+			.duration(transitionTime)
+			.attr("class", "bar1")
+			.attr("x", function(d) { return xDualBarChart(d.year); })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			//.attr("y", function(d) { return yDualBarChart(d.gdpGrowth); })
+			//.attr("height", function(d,i,j) { return halfHeight - yDualBarChart(d.gdpGrowth); })
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j) { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.attr("opacity", 1);
+
+		bars1.exit()
+			.interrupt()
+			.transition()
+			.duration(transitionTime)
+			.attr("opacity", 0)
+			.remove();
+
+
+		bars2.enter()
+			.append("rect")
+			.attr("class", "bar2")
+			.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j)  { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.on("click", function(d) { setYear(d.year) })
+			.on("mouseout",  barMouseOut)
+			.on("mouseover", barHovered)
+			.attr("opacity", 0)
+			.transition()
+			.duration(transitionTime)
+			.attr("opacity", 1);
+
+		bars2.interrupt()
+			.transition()
+			.duration(transitionTime)
+			.attr("class", "bar2")
+			.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
+			.attr("width", xDualBarChart.bandwidth()/2)
+			.attr("y", function(d) { return yDualBarChart(Math.max(0,d.computed)); })
+			.attr("height", function(d,i,j)  { return Math.abs(yDualBarChart(d.computed) - yDualBarChart(0)); })
+			.attr("year", function(d) { return d.year; })
+			.attr("opacity", 1);
+
+		bars2.exit()
+			.interrupt()
+			.transition()
+			.duration(transitionTime)
+			.attr("opacity", 0)
+			.remove();
+
+		svgComparison.select(".y.axis")
+			.transition()
+			.duration(transitionTime)
+			.call(yAxisDBC)
+	} 	
 }
 
 function setter() {
@@ -458,27 +551,10 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 			transitionPretty = true;
 		}
 
+		transitionTime = transitionTime / transitionSpeedMultiplier;
+
 		var circle = svgScatter.selectAll("circle")
 			.data(data, function(d) {return d.ISO_code; });
-
-
-		var setEnter = setter()
-			.attr("cx", function(d) { return x(d.indicator_secondary); })
-			.attr("cy", function(d) { return y(d.indicator_primary); })
-			.attr("countryCode", function(d) { return d.ISO_code; })
-			.attr("class", colorDots);
-
-		var destinationEnter = setter()
-			.attr("opacity", "1")
-			.attr("r", dotRadius);
-
-		var destinationTransition = setter()
-			.attr("r", dotRadius)
-			.attr("cx", function(d) { return x(d.indicator_secondary); })
-			.attr("cy", function(d) { return y(d.indicator_primary); })
-			.attr("countryCode", function(d) { return d.ISO_code; })
-			.attr("class", colorDots)
-			.attr("opacity", "1");
 
 		if (transitionPretty) //take more time with delays to introduce new elements
 		{
@@ -562,7 +638,7 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 }
 
 
-function visualizeData(c1, c2){
+function visualizeData(c1, c2, transition){
 	var TimeLength = EndYear - StartYear;
 
 	var data_1 				= new Array(TimeLength);
@@ -593,7 +669,11 @@ function visualizeData(c1, c2){
 	}
 	
 	if(hasData_1 || hasData_2){
-		drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary);
+		if(typeof transition !== "undefined"){
+			drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary, transition);
+		} else {
+			drawDualBarChart(data_1, data_2, data_1_secondary, data_2_secondary);
+		}
 	} else {
 		//notify user no data
 		alert('No Data for selection.');
@@ -792,6 +872,7 @@ function resetCountrySelection(){
 
 //behaviour: replace 2nd selection
 function setSelected(element){
+	var transition = true;
 	if(selectedCountries[0] === element || selectedCountries[1] === element){
 		return;
 	}
@@ -816,12 +897,14 @@ function setSelected(element){
 				d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', false);
 				d3.select("[countryCode=" + selectedCountries[1].id + "]").attr('r', 3.5);
 			}
+		} else { //1st time to draw dbc, dont transition
+			transition = false;
 		}
 		selectedCountries[1] = element;
 		document.getElementById("SelectedCountry_2").innerHTML = selectedCountries[1].__data__.properties.name;
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
-		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id, transition);
 		if (selectedCountries[1].id != -99) {
 			// highlight dot country2 in scatterplot
 			d3.select("[countryCode=" + selectedCountries[1].id + "]").classed('dotscountry2', true);
@@ -874,7 +957,7 @@ function setYear(y, transitionTime, isPlay) {
 	d3.selectAll("path").style("fill", colorScale)
 	// 2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
-		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id, true);
 	}
 	if(typeof transitionTime !== "undefined"){
 		if(isPlay){
@@ -943,7 +1026,7 @@ function resize() {
 
 	//2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
-		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		visualizeData(selectedCountries[0].id, selectedCountries[1].id, true);
 	}
 	drawScatterplot(false);
 }
@@ -1042,9 +1125,26 @@ function play() {
 		}
 	};
 	advance();
-	timer = setInterval(advance, transitionTime + transitionPause);
+	timer = setInterval(advance, (transitionTime + transitionPause) / transitionSpeedMultiplier);
 }
 
+
+function toggleShowSettings() {
+	var settingsElem = document.getElementById("settings");
+	if(settingsElem.style.display === "none"){
+		settingsElem.style.display = "inline";
+	} else {
+		settingsElem.style.display = "none";
+	}
+}
+
+function initSettings(){
+	document.getElementById("transitionSpeedMultiplier").value = transitionSpeedMultiplier;
+}
+
+function updateTransitionSpeed(){
+	transitionSpeedMultiplier = document.getElementById("transitionSpeedMultiplier").value;
+}
 // could also make this into an event listener maybe?
 function waitForElement(){
     if(typeof countryData !== "undefined"){
