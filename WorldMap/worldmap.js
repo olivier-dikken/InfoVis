@@ -307,7 +307,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.on("mouseover", barHovered); 	
 }
 
-function drawScatterplot(transition) {
+function drawScatterplot(transition, transitionTime) {
 	
 	var d1 = {}; // primary indicators
 	var d2 = {}; // secondary indicators
@@ -367,10 +367,9 @@ function drawScatterplot(transition) {
 			.style("text-anchor", "end")
 			.text(indicator_secondary);
 
-		points = svgScatter.append("g")
-			.attr("class", "plotArea")
+		points = svgScatter
 		.selectAll(".dot")
-			.data(data, function(d) {return d; })
+			.data(data, function(d) {return d.ISO_code; })
 	    .enter().append("circle")
 			.attr("r", dotRadius)
 			.attr("cx", function(d) { return x(d.indicator_primary); })
@@ -385,56 +384,88 @@ function drawScatterplot(transition) {
 		console.log()
 			//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 	}	else { //transition
-		var circle1 = points.selectAll(".dot")
-			.data(data, function(d) {return d; });
-
-		var circle2 = points.selectAll("circle")
-			.data(data, function(d) {return d; });
+		var transitionPretty = false;
+		if(typeof transitionTime === "undefined"){
+			transitionTime = 1500;
+			transitionPretty = true;
+		}
 
 		var circle = svgScatter.selectAll("circle")
-			.data(data, function(d) {return d; });
-
-		var circle4 = svgScatter.selectAll(".dot")
-			.data(data, function(d) {return d; });
+			.data(data, function(d) {return d.ISO_code; });
 
 
-		console.log(circle1);
-		console.log(circle2);
-		console.log(circle);
-		console.log(circle4);
+		if (transitionPretty) //take more time with delays to introduce new elements
+		{
+			console.log("pretty trans");
+			circle.enter()
+				.append("circle")
+				.attr("cx", function(d) { return x(d.indicator_primary); })
+				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("countryCode", function(d) { return d.ISO_code; })
+				.attr("class", colorDots)
+				.on("mousemove", showDotTooltip)
+				.on("mouseover", dotHovered)
+				.on("mouseout",  dotMouseOut)
+				.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); })
+				.attr("opacity", "0")
+				.attr("r", 0)
+				.transition()
+				.delay(function(d, i){return transitionTime/2 + ((i / data.length) * 100)})
+				.duration(transitionTime)
+				.attr("opacity", "1")
+				.attr("r", dotRadius);
 
+			circle.transition()
+				.duration(transitionTime)
+				.delay(function(d, i){return i / data.length * 100})
+				.attr("r", dotRadius)
+				.attr("cx", function(d) { return x(d.indicator_primary); })
+				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("countryCode", function(d) { return d.ISO_code; })
+				.attr("class", colorDots);
+		} else {
+			circle.enter()
+				.append("circle")
+				.attr("cx", function(d) { return x(d.indicator_primary); })
+				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("countryCode", function(d) { return d.ISO_code; })
+				.attr("class", colorDots)
+				.on("mousemove", showDotTooltip)
+				.on("mouseover", dotHovered)
+				.on("mouseout",  dotMouseOut)
+				.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); })
+				.attr("opacity", "0")
+				.attr("r", 0)
+				.transition()
+				.duration(transitionTime)
+				.attr("opacity", "1")
+				.attr("r", dotRadius);
 
-		circle.enter()
-			.append("circle")
-			.attr("r", dotRadius)
-			.attr("cx", function(d) { return x(d.indicator_primary); })
-			.attr("cy", function(d) { return y(d.indicator_secondary); })
-			.attr("countryCode", function(d) { return d.ISO_code; })
-			.attr("class", colorDots)
-			.on("mousemove", showDotTooltip)
-			.on("mouseover", dotHovered)
-			.on("mouseout",  dotMouseOut)
-			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+			circle.transition()
+				.duration(transitionTime)
+				.attr("r", dotRadius)
+				.attr("cx", function(d) { return x(d.indicator_primary); })
+				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("countryCode", function(d) { return d.ISO_code; })
+				.attr("class", colorDots);
+		}
 
-		circle.exit().remove();
+		circle.exit()
+			.transition(transitionTime)
+			.attr("r", 0)
+			.attr("opacity", 0)
+			.remove();
 
-		circle.transition()
-			.duration(1000)
-			.delay(function(d, i){return i / data.length * 100})
-			.attr("r", dotRadius)
-			.attr("cx", function(d) { return x(d.indicator_primary); })
-			.attr("cy", function(d) { return y(d.indicator_secondary); })
-			.attr("countryCode", function(d) { return d.ISO_code; })
-			.attr("class", colorDots);
+		
 
 		svgScatter.select(".x.axis")
 			.transition()
-			.duration(1000)
+			.duration(transitionTime)
 			.call(xAxis)
 
 		svgScatter.select(".y.axis")
 			.transition()
-			.duration(1000)
+			.duration(transitionTime)
 			.call(yAxis)
 	}
 	// move selected countrydots to front	
@@ -746,9 +777,10 @@ function zoomed() {
 	})
 }
 
-function setYear(y) {
+function setYear(y, transitionTime) {
  	// console.log("Selected year is set to: " + y);
 	selected_year = y;
+
 	// update slider
 	output.innerHTML = selected_year;
 	slider.value = selected_year;	
@@ -758,7 +790,11 @@ function setYear(y) {
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
-	drawScatterplot(true);
+	if(typeof transitionTime !== "undefined"){
+		drawScatterplot(true, transitionTime);
+	} else {
+		drawScatterplot(true);
+	}
 }
 
 function barHovered() {
@@ -889,6 +925,7 @@ function stop() {
 }
 
 function play() {
+	var transitionTime = 500;
 	if (timer) { stop(); return; };
 	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
@@ -901,11 +938,11 @@ function play() {
 			return;
 		} else {
 			// else advance
-			setYear(selected_year+1);
+			setYear(selected_year+1, transitionTime);
 		}
 	};
 	advance();
-	timer = setInterval(advance, 100);
+	timer = setInterval(advance, transitionTime);
 }
 
 // could also make this into an event listener maybe?
