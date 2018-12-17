@@ -265,14 +265,27 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 	svgComparison.append("g")
 		.attr("class", "y axis axisLeft")
 		.call(yAxisDBC);
+
+	var newIndicatorLabel = indicator_primary;
+	doNorm = document.getElementById("ToggleCheckbox").checked;
+	if(doNorm){
+		var abbrLength = {"long": 16, "short": 10};
+		var sign = "/";
+		if(multiplyInicatorList.includes(indicator_secondary))
+			sign = "*";
+		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+	}
+		
+
 	svgComparison.append("text")
 		.attr("class", "label")
+		.classed("labelPrim", true)
 		.attr("id", "yLabel")
 		.attr("transform", "rotate(-90)")
 		.attr("y", 0 - svgMargin.left)
 		.attr("dy", "1em")
 		.style("text-anchor", "end")
-		.text(indicator_primary);
+		.text(newIndicatorLabel);
 		
 	svgComparison.append("g")
 		.attr("class", "bars1")
@@ -356,7 +369,7 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 	Object.keys(countryData).map(function(c) { 
 		if (countryData[c][indicator_primary] != undefined) {
 			d1[c] = countryData[c][indicator_primary][selected_year - StartYear];
-			if(isPlay){
+			if(isPlay){//if animation then extent over all values for all years to keep axis stable
 				overall1 = overall1.concat(countryData[c][indicator_primary]);
 			}
 		}
@@ -940,18 +953,27 @@ function updateToggle() {
 	doNorm = document.getElementById("ToggleCheckbox").checked;
 	var abbrLength = {"long": 16, "short": 10};
 
+	var newIndicatorLabel;
+
 	if(doNorm){
 		var sign = "/";
 		if(multiplyInicatorList.includes(indicator_secondary))
 			sign = "*";
-		document.getElementById("ToggleStatus").innerHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";	
+		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+		var newIndicatorHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+
+		document.getElementById("ToggleStatus").innerHTML = newIndicatorHTML;
+
 	} else {
-		document.getElementById("ToggleStatus").innerHTML = indicator_primary.substr(0, abbrLength.long) + " per Year";
+		newIndicatorLabel = indicator_primary.substr(0, abbrLength.long) + " per Year";
+		document.getElementById("ToggleStatus").innerHTML = newIndicatorLabel;
 	}
 
 	if(prevDoNorm != doNorm){
 		if(selectedCountries[1] != null)
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
+		d3.select("#yLabel")
+			.text(newIndicatorLabel);
 	}
 	
 }
