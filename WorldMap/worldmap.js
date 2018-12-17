@@ -307,18 +307,64 @@ function drawDualBarChart(dp1, dp2, ds1, ds2) {
 		.on("mouseover", barHovered); 	
 }
 
-function drawScatterplot(transition, transitionTime) {
+function setter() {
+
+  var s,
+      props = [];
+
+  function add(type) {
+    return function(key,value) {
+      props.push({type: type, key: key, value: value});
+      return s;
+    };
+  }
+
+  function set() {
+
+    return function(selection) {
+
+      if (!(selection instanceof d3.selection || selection instanceof d3.transition)) {
+          selection  = d3.select(this);
+      }
+
+      props.forEach(function(prop){
+        selection[prop.type](prop.key,prop.value);
+      });
+
+    };
+
+  }
+
+  return s = {
+    style: add("style"),
+    attr: add("attr"),
+    set: set
+  };
+
+}
+
+function drawScatterplot(transition, transitionTime, isPlay) {
 	
 	var d1 = {}; // primary indicators
 	var d2 = {}; // secondary indicators
 	var data = [];
 
+	var overall1 = [];
+	var overall2 = [];
+
+	var done = false;
 	Object.keys(countryData).map(function(c) { 
 		if (countryData[c][indicator_primary] != undefined) {
-			d1[c] = countryData[c][indicator_primary][selected_year - StartYear]
+			d1[c] = countryData[c][indicator_primary][selected_year - StartYear];
+			if(isPlay){
+				overall1 = overall1.concat(countryData[c][indicator_primary]);
+			}
 		}
 		if (countryData[c][indicator_secondary] != undefined) {
 			d2[c] = countryData[c][indicator_secondary][selected_year - StartYear]
+			if(isPlay){
+				overall2 = overall2.concat(countryData[c][indicator_secondary]);
+			}
 		}
 	});
 
@@ -329,9 +375,18 @@ function drawScatterplot(transition, transitionTime) {
 		}
 	});
 	
-	var xExtent = d3.extent(Object.values(d1), function(d) { return d; });
-	//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
-	var yExtent = d3.extent(Object.values(d2), function(d) { return d; });
+	var xExtent;
+	var yExtent;
+
+	if(isPlay){
+		yExtent = d3.extent(Object.values(overall1), function(d) { return d; });
+		//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+		xExtent = d3.extent(Object.values(overall2), function(d) { return d; });
+	} else {
+		yExtent = d3.extent(Object.values(d1), function(d) { return d; });
+		//var yExtent = d3.extent(d1, function(d) { return d; });//TODO check if should use all data or only of 1 country
+		xExtent = d3.extent(Object.values(d2), function(d) { return d; });		
+	}
 
 	x.domain(xExtent).nice();
 	y.domain(yExtent).nice();
@@ -351,7 +406,7 @@ function drawScatterplot(transition, transitionTime) {
 			.attr("id", "xLabel")
 			.attr("transform", "translate(" + (svgInnerHalfWidth/2) + " ," + (svgInnerHalfHeight + svgMargin.top + 10) + ")")
 			.style("text-anchor", "start")
-			.text(indicator_primary);
+			.text(indicator_secondary);
 
 		svgScatter.append("g")
 			.attr("id", "yAxis")
@@ -365,15 +420,15 @@ function drawScatterplot(transition, transitionTime) {
 			.attr("y", 0 - svgMargin.left)
 			.attr("dy", "1em")
 			.style("text-anchor", "end")
-			.text(indicator_secondary);
+			.text(indicator_primary);
 
 		points = svgScatter
 		.selectAll(".dot")
 			.data(data, function(d) {return d.ISO_code; })
 	    .enter().append("circle")
 			.attr("r", dotRadius)
-			.attr("cx", function(d) { return x(d.indicator_primary); })
-			.attr("cy", function(d) { return y(d.indicator_secondary); })
+			.attr("cx", function(d) { return x(d.indicator_secondary); })
+			.attr("cy", function(d) { return y(d.indicator_primary); })
 			.attr("countryCode", function(d) { return d.ISO_code; })
 			.attr("class", colorDots)
 			.on("mousemove", showDotTooltip)
@@ -394,13 +449,30 @@ function drawScatterplot(transition, transitionTime) {
 			.data(data, function(d) {return d.ISO_code; });
 
 
+		var setEnter = setter()
+			.attr("cx", function(d) { return x(d.indicator_secondary); })
+			.attr("cy", function(d) { return y(d.indicator_primary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots);
+
+		var destinationEnter = setter()
+			.attr("opacity", "1")
+			.attr("r", dotRadius);
+
+		var destinationTransition = setter()
+			.attr("r", dotRadius)
+			.attr("cx", function(d) { return x(d.indicator_secondary); })
+			.attr("cy", function(d) { return y(d.indicator_primary); })
+			.attr("countryCode", function(d) { return d.ISO_code; })
+			.attr("class", colorDots)
+			.attr("opacity", "1");
+
 		if (transitionPretty) //take more time with delays to introduce new elements
 		{
-			console.log("pretty trans");
 			circle.enter()
 				.append("circle")
-				.attr("cx", function(d) { return x(d.indicator_primary); })
-				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("cx", function(d) { return x(d.indicator_secondary); })
+				.attr("cy", function(d) { return y(d.indicator_primary); })
 				.attr("countryCode", function(d) { return d.ISO_code; })
 				.attr("class", colorDots)
 				.on("mousemove", showDotTooltip)
@@ -415,19 +487,21 @@ function drawScatterplot(transition, transitionTime) {
 				.attr("opacity", "1")
 				.attr("r", dotRadius);
 
-			circle.transition()
+			circle.interrupt()
+				.transition()
 				.duration(transitionTime)
 				.delay(function(d, i){return i / data.length * 100})
 				.attr("r", dotRadius)
-				.attr("cx", function(d) { return x(d.indicator_primary); })
-				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("cx", function(d) { return x(d.indicator_secondary); })
+				.attr("cy", function(d) { return y(d.indicator_primary); })
 				.attr("countryCode", function(d) { return d.ISO_code; })
-				.attr("class", colorDots);
+				.attr("class", colorDots)
+				.attr("opacity", "1");
 		} else {
 			circle.enter()
 				.append("circle")
-				.attr("cx", function(d) { return x(d.indicator_primary); })
-				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("cx", function(d) { return x(d.indicator_secondary); })
+				.attr("cy", function(d) { return y(d.indicator_primary); })
 				.attr("countryCode", function(d) { return d.ISO_code; })
 				.attr("class", colorDots)
 				.on("mousemove", showDotTooltip)
@@ -441,22 +515,23 @@ function drawScatterplot(transition, transitionTime) {
 				.attr("opacity", "1")
 				.attr("r", dotRadius);
 
-			circle.transition()
+			circle.interrupt()
+				.transition()
 				.duration(transitionTime)
 				.attr("r", dotRadius)
-				.attr("cx", function(d) { return x(d.indicator_primary); })
-				.attr("cy", function(d) { return y(d.indicator_secondary); })
+				.attr("cx", function(d) { return x(d.indicator_secondary); })
+				.attr("cy", function(d) { return y(d.indicator_primary); })
 				.attr("countryCode", function(d) { return d.ISO_code; })
-				.attr("class", colorDots);
+				.attr("class", colorDots)
+				.attr("opacity", "1");
 		}
 
 		circle.exit()
+			.interrupt()
 			.transition(transitionTime)
 			.attr("r", 0)
 			.attr("opacity", 0)
-			.remove();
-
-		
+			.remove();		
 
 		svgScatter.select(".x.axis")
 			.transition()
@@ -573,13 +648,11 @@ function colorScale(d){
 			if(countryData[countryCode]["Refugees_Total"]){
 				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
 				return colors(value);
-			}
-			else{
-				return "grey"
+			} else {
+				return "white"
 			}
 			
-		}
-		else{
+		} else {
 			return "black"
 		}
 	}
@@ -777,7 +850,7 @@ function zoomed() {
 	})
 }
 
-function setYear(y, transitionTime) {
+function setYear(y, transitionTime, isPlay) {
  	// console.log("Selected year is set to: " + y);
 	selected_year = y;
 
@@ -791,7 +864,11 @@ function setYear(y, transitionTime) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 	}
 	if(typeof transitionTime !== "undefined"){
-		drawScatterplot(true, transitionTime);
+		if(isPlay){
+			drawScatterplot(true, transitionTime, true);
+		} else {
+			drawScatterplot(true, transitionTime);
+		}
 	} else {
 		drawScatterplot(true);
 	}
@@ -926,6 +1003,7 @@ function stop() {
 
 function play() {
 	var transitionTime = 500;
+	var transitionPause = 150;
 	if (timer) { stop(); return; };
 	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
@@ -938,11 +1016,11 @@ function play() {
 			return;
 		} else {
 			// else advance
-			setYear(selected_year+1, transitionTime);
+			setYear(selected_year+1, transitionTime, true);
 		}
 	};
 	advance();
-	timer = setInterval(advance, transitionTime);
+	timer = setInterval(advance, transitionTime + transitionPause);
 }
 
 // could also make this into an event listener maybe?
