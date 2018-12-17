@@ -3,6 +3,8 @@
 
 Array.range = (start, end) => Array.from({length: (end - start)}, (v, k) => k + start);
 
+var points;
+
 //init options
 var indicator_primary = "";
 var indicator_secondary = "";
@@ -365,10 +367,10 @@ function drawScatterplot(transition) {
 			.style("text-anchor", "end")
 			.text(indicator_secondary);
 
-		var points = svgScatter.append("g")
+		points = svgScatter.append("g")
 			.attr("class", "plotArea")
 		.selectAll(".dot")
-			.data(data)
+			.data(data, function(d) {return d; })
 	    .enter().append("circle")
 			.attr("r", dotRadius)
 			.attr("cx", function(d) { return x(d.indicator_primary); })
@@ -379,13 +381,31 @@ function drawScatterplot(transition) {
 			.on("mouseover", dotHovered)
 			.on("mouseout",  dotMouseOut)
 			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
+
+		console.log()
 			//.attr("cy", function(d) { return y(d["gdpGrowth1"]); })
 	}	else { //transition
-		var circle = svgScatter.selectAll("circle")
-			.data(data, function(d) { return d.ISO_code; });
+		var circle1 = points.selectAll(".dot")
+			.data(data, function(d) {return d; });
 
-		circle.exit().remove();
-		circle.enter().append("circle")
+		var circle2 = points.selectAll("circle")
+			.data(data, function(d) {return d; });
+
+		var circle = svgScatter.selectAll("circle")
+			.data(data, function(d) {return d; });
+
+		var circle4 = svgScatter.selectAll(".dot")
+			.data(data, function(d) {return d; });
+
+
+		console.log(circle1);
+		console.log(circle2);
+		console.log(circle);
+		console.log(circle4);
+
+
+		circle.enter()
+			.append("circle")
 			.attr("r", dotRadius)
 			.attr("cx", function(d) { return x(d.indicator_primary); })
 			.attr("cy", function(d) { return y(d.indicator_secondary); })
@@ -396,6 +416,7 @@ function drawScatterplot(transition) {
 			.on("mouseout",  dotMouseOut)
 			.on("click", function(d){setSelected(d3.selectAll("#" + d.ISO_code).nodes()[0]); });
 
+		circle.exit().remove();
 
 		circle.transition()
 			.duration(1000)
