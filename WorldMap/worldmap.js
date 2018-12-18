@@ -1125,21 +1125,22 @@ function resize() {
 	
 	drawWorldMap();
 	
-	//Scatterplot axes
+	// Scatterplot axes
 	x.range([0, svgInnerHalfWidth]);
 	y.range([svgInnerHalfHeight, 0]);
 	
 	xAxis.scale(x);
 	yAxis.scale(y);
 	
-	//Dual bar chart axes
+	// Dual bar chart axes
 	xDualBarChart.rangeRound([0, svgInnerHalfWidth]);
 	yDualBarChart.range([svgInnerHalfHeight, 0]);
 	
 	xAxisDBC.scale(xDualBarChart);
 	yAxisDBC.scale(yDualBarChart);
 
-	//2 countries need to be selected before calling 'visualizeData()'
+	// Draw dual bar chart and scatterplot
+	// 2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id, true);
 	}
@@ -1155,6 +1156,7 @@ function updateToggle() {
 	var newIndicatorLabel;
 
 	if (doNorm) {
+		// Normalization option is selected
 		var sign = "/";
 		if (multiplyIndicatorList.includes(indicator_secondary))
 			sign = "*";
@@ -1164,10 +1166,12 @@ function updateToggle() {
 		document.getElementById("ToggleStatus").innerHTML = newIndicatorHTML;
 
 	} else {
+		// No normalization
 		newIndicatorLabel = indicator_primary.substr(0, abbrLength.long) + " per Year";
 		document.getElementById("ToggleStatus").innerHTML = newIndicatorLabel;
 	}
 
+	// Update dual bar chart and y label
 	if (prevDoNorm != doNorm) {
 		if (selectedCountries[1] != null)
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
@@ -1177,6 +1181,7 @@ function updateToggle() {
 	
 }
 
+// Initialize the indicator names list by filling them
 function initOptions(indicatorNamesList) {
 	var excludeSecondary = ["Refugees_Total"];
 
@@ -1197,31 +1202,35 @@ function initOptions(indicatorNamesList) {
 		}
 	});
 
+	// Update the indicator lists and the toggle checkbox
 	updatePrimaryIndicator();
 	updateSecondaryIndicator();
 
 	updateToggle();
 }
 
+// Updates the transition type when selected from ease type list
 function updateEaseType() {
 	var selectEase = document.getElementById("select_ease_type");
 	selectedEaseType = selectEase.options[selectEase.selectedIndex].value;
 }
 
-d3.select(window).on("resize", resize);
-
+// Calls setYear on new time slider input
 slider.oninput = function() {
 	setYear(Number(this.value));
 }
 
+// Timer variable for automatically sliding the time slider
 var timer = undefined;
 
+// Stops the timer when stop button clicked
 function stop() {
     clearInterval(timer);
     timer = undefined;
     d3.select("button.play").text("Play");
 }
 
+// Plays the timer when play button clicked
 function play() {
 	var transitionTime = 500;
 	var transitionPause = 80;
@@ -1232,11 +1241,11 @@ function play() {
 	d3.select("button.play").text("Stop");
 	var advance = function() {
 		if (selected_year == EndYear - 1) {
-			// stop at endyear - 1
+			// Stop at endyear - 1
 			stop();
 			return;
 		} else {
-			// else advance
+			// Else advance
 			setYear(selected_year+1, transitionTime, true);
 		}
 	};
@@ -1244,7 +1253,7 @@ function play() {
 	timer = setInterval(advance, (transitionTime + transitionPause) / transitionSpeedMultiplier);
 }
 
-
+// Shows the transition settings when clicked
 function toggleShowSettings() {
 	var settingsElem = document.getElementById("settings");
 	if (settingsElem.style.display === "none") {
@@ -1254,6 +1263,7 @@ function toggleShowSettings() {
 	}
 }
 
+// Updates the transition speed when input changed
 function updateTransitionSpeed() {
 	transitionSpeedMultiplier = document.getElementById("transitionSpeedMultiplier").value;
 }
@@ -1272,4 +1282,8 @@ function waitForElement() {
     }
 }
 
+// Call wait function
 waitForElement();
+
+// On window resize action
+d3.select(window).on("resize", resize);
