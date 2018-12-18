@@ -52,6 +52,8 @@ var zoomk = 1;
 
 //gloabal settings
 var transitionSpeedMultiplier = 1;
+var easeType = ["easeCubic", "easeLinear", "easeSin"];
+var selectedEaseType = "easeCubic";
 initSettings();
 		
 //offset for tooltip 
@@ -255,7 +257,8 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 	if(!transition){
 		svgComparison.selectAll("g").remove();
 		svgComparison.selectAll("text").remove();
-		
+		svgComparison.selectAll("rect").remove();
+
 		svgComparison.append("g")
 			.attr("class", "x axis")
 			//.attr("transform", "translate(0," + halfHeight + ")")
@@ -348,6 +351,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			.on("mouseover", barHovered)
 			.attr("opacity", 0)
 			.transition()
+			//.ease(easeType[selectedEaseType])
 			.duration(transitionTime)
 			.attr("opacity", 1);
 
@@ -410,6 +414,12 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			.transition()
 			.duration(transitionTime)
 			.call(yAxisDBC)
+
+		svgComparison.select(".x.axis")
+			.transition()
+			.attr("transform", "translate(0," + yDualBarChart(0) + ")")
+			.duration(transitionTime)
+			.call(xAxisDBC)
 	} 	
 }
 
@@ -1108,7 +1118,7 @@ function stop() {
 
 function play() {
 	var transitionTime = 500;
-	var transitionPause = 150;
+	var transitionPause = 80;
 	if (timer) { stop(); return; };
 	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
