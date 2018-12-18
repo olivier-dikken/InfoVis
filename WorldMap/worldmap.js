@@ -152,22 +152,14 @@ d3.json("resources/data.json", function(error, data){
 d3.json("countries.topo.json", function(error, world) {
 	if(error) return console.error(error);
 	worldData = world;
-	//console.log(worldData);
-});
-
-parseISOJSON();
-function parseISOJSON(){ //call on init
 	selectOrigin = document.getElementById("select_origin");
-	Iso3Data = JSON.parse(isodata)[0];
-	for(var key in Iso3Data){
-		if(Iso3Data.hasOwnProperty(key)){ //fill select options
-			var option = document.createElement("option");
-			option.text = Iso3Data[key]; //country name
-			option.value = key; //iso3
-			selectOrigin.add(option)
-		}
-	}
-}
+	worldData.objects.countries.geometries.forEach(function(d) {
+		var option = document.createElement("option");
+		option.text = d.properties.name; // Country name
+		option.value = d.id; // iso3
+		selectOrigin.add(option)
+	});
+});
 
 function getIndicatorNameWithOrigin(){
 	if(indicator_primary.substr(0, 8) === "Refugees"){
