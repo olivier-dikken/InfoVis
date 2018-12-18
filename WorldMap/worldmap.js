@@ -53,8 +53,8 @@ var zoomk = 1;
 //gloabal settings
 var transitionSpeedMultiplier = 1;
 initSettings();
-var easeTypes = ["easeCubic", "easeLinear", "easeSin"];
-var easeConfig = {"easeCubic": d3.easeCubic, "easeLinear": d3.easeLinear, "easeSin": d3.easeSin};
+var easeTypes = ["Cubic", "Linear", "Sin"];
+var easeConfig = {"Cubic": d3.easeCubic, "Linear": d3.easeLinear, "Sin": d3.easeSin};
 var selectedEaseType = easeTypes[0];
 initEaseOptions(easeTypes);
 		
@@ -1154,7 +1154,6 @@ function stop() {
 
 function play() {
 	var transitionTime = 500;
-	var transitionPause = 80;
 	if (timer) { stop(); return; };
 	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
@@ -1171,7 +1170,7 @@ function play() {
 		}
 	};
 	advance();
-	timer = setInterval(advance, (transitionTime + transitionPause) / transitionSpeedMultiplier);
+	timer = setInterval(advance, transitionTime / transitionSpeedMultiplier);
 }
 
 
