@@ -52,9 +52,11 @@ var zoomk = 1;
 
 //gloabal settings
 var transitionSpeedMultiplier = 1;
-var easeType = ["easeCubic", "easeLinear", "easeSin"];
-var selectedEaseType = "easeCubic";
 initSettings();
+var easeTypes = ["easeCubic", "easeLinear", "easeSin"];
+var easeConfig = {"easeCubic": d3.easeCubic, "easeLinear": d3.easeLinear, "easeSin": d3.easeSin};
+var selectedEaseType = easeTypes[0];
+initEaseOptions(easeTypes);
 		
 //offset for tooltip 
 var offsetL = d3.select("#map").node().offsetLeft+10;
@@ -351,12 +353,13 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			.on("mouseover", barHovered)
 			.attr("opacity", 0)
 			.transition()
-			//.ease(easeType[selectedEaseType])
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("opacity", 1);
 
 		bars1.interrupt()
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("class", "bar1")
 			.attr("x", function(d) { return xDualBarChart(d.year); })
@@ -371,6 +374,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 		bars1.exit()
 			.interrupt()
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("opacity", 0)
 			.remove();
@@ -389,11 +393,13 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			.on("mouseover", barHovered)
 			.attr("opacity", 0)
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("opacity", 1);
 
 		bars2.interrupt()
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("class", "bar2")
 			.attr("x", function(d) { return xDualBarChart(d.year) + xDualBarChart.bandwidth()/2; })
@@ -406,17 +412,20 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 		bars2.exit()
 			.interrupt()
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.attr("opacity", 0)
 			.remove();
 
 		svgComparison.select(".y.axis")
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.call(yAxisDBC)
 
 		svgComparison.select(".x.axis")
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.attr("transform", "translate(0," + yDualBarChart(0) + ")")
 			.duration(transitionTime)
 			.call(xAxisDBC)
@@ -510,6 +519,7 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 	if(!transition) { //no transition
 		svgScatter.selectAll("g").remove();
 		svgScatter.selectAll("text").remove();
+		svgScatter.selectAll("circle").remove();
 		
 		svgScatter.append("g")
 			.attr("id", "xAxis")
@@ -581,6 +591,7 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 				.attr("opacity", "0")
 				.attr("r", 0)
 				.transition()
+				.ease(easeConfig[selectedEaseType])
 				.delay(function(d, i){return transitionTime/2 + ((i / data.length) * 100)})
 				.duration(transitionTime)
 				.attr("opacity", "1")
@@ -588,6 +599,7 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 
 			circle.interrupt()
 				.transition()
+				.ease(easeConfig[selectedEaseType])
 				.duration(transitionTime)
 				.delay(function(d, i){return i / data.length * 100})
 				.attr("r", dotRadius)
@@ -610,12 +622,14 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 				.attr("opacity", "0")
 				.attr("r", 0)
 				.transition()
+				.ease(easeConfig[selectedEaseType])
 				.duration(transitionTime)
 				.attr("opacity", "1")
 				.attr("r", dotRadius);
 
 			circle.interrupt()
 				.transition()
+				.ease(easeConfig[selectedEaseType])
 				.duration(transitionTime)
 				.attr("r", dotRadius)
 				.attr("cx", function(d) { return x(d.indicator_secondary); })
@@ -627,18 +641,22 @@ function drawScatterplot(transition, transitionTime, isPlay) {
 
 		circle.exit()
 			.interrupt()
-			.transition(transitionTime)
+			.transition()
+			.ease(easeConfig[selectedEaseType])
+			.duration(transitionTime)
 			.attr("r", 0)
 			.attr("opacity", 0)
 			.remove();		
 
 		svgScatter.select(".x.axis")
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.call(xAxis)
 
 		svgScatter.select(".y.axis")
 			.transition()
+			.ease(easeConfig[selectedEaseType])
 			.duration(transitionTime)
 			.call(yAxis)
 	}
@@ -875,9 +893,12 @@ function resetCountrySelection(){
 		}
 	})
 	selectedCountries = [null, null];
+	//clear scatterplot
 	drawScatterplot(false);
+	//clear comparinson DBC
 	svgComparison.selectAll("g").remove();
 	svgComparison.selectAll("text").remove();
+	svgComparison.selectAll("rect").remove();
 }
 
 //behaviour: replace 2nd selection
@@ -1095,6 +1116,21 @@ function initOptions(indicatorNamesList){
 	updateSecondaryIndicator();
 
 	updateToggle();
+}
+
+function initEaseOptions(easeTypeList){
+	var selectEase = document.getElementById("select_ease_type");
+	easeTypeList.forEach(function(element){
+		var option = document.createElement("option");
+		option.text = element;
+		selectEase.add(option);
+	});
+	selectedEaseType = selectEase.options[selectEase.selectedIndex].value;
+}
+
+function updateEaseType(){
+	var selectEase = document.getElementById("select_ease_type");
+	selectedEaseType = selectEase.options[selectEase.selectedIndex].value;
 }
 
 d3.select(window).on("resize", resize);
