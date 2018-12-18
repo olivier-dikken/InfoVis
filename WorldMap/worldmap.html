@@ -48,6 +48,10 @@
 		    			<p>Primary:</p>
 			    		<select id="select_indicator_primary" onchange="updatePrimaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
 		    		</div>
+		    		<div id="select_origin_div" style="margin-left: 10px; display: flex; align-items: center;">
+		    			<p>Refugees Origin:</p>
+		    			<select id="select_origin" onchange="updatePrimaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
+		    		</div>
 		    		<div style="margin-left: 10px; display: flex; align-items: center;">
 		    			<p>Secondary:</p>
 		    			<select id="select_indicator_secondary" onchange="updateSecondaryIndicator()" style="width: 120px; margin-left: 5px;"></select>
@@ -64,6 +68,7 @@
 	        </div>
 	        <div id="comparison"></div>
 	    </div>
+	    <script type="text/javascript" src="resources/iso3.json"></script>
 		<script type="text/javascript" src="worldmap.js"></script>
     </body>
 </html>

@@ -12,9 +12,11 @@ var indicatorList = ["Refugees_Total", "GDP growth (annual %)", "GDP per capita 
 var multiplyInicatorList = ["Population density (people per sq. km of land area)"];
 var selectPrimary;
 var selectSecondary;
+var selectOrigin;
 var selectedCountries = [null, null];
 var doNorm = false;
 document.getElementById("ToggleCheckbox").checked = doNorm;
+var Iso3Data = {};
 
 //init config
 var StartYear = 1951;
@@ -128,6 +130,7 @@ var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 //get domain values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
 var domain = [];
+var colorDomain = [];
 
 var countryData; // store data.json
 var worldData; // store countries.topo.json
@@ -143,6 +146,7 @@ d3.json("resources/data.json", function(error, data){
 			});
 		}
 	});
+	setColorDomain();
 });
 
 d3.json("countries.topo.json", function(error, world) {
@@ -151,8 +155,39 @@ d3.json("countries.topo.json", function(error, world) {
 	//console.log(worldData);
 });
 
+parseISOJSON();
+function parseISOJSON(){ //call on init
+	selectOrigin = document.getElementById("select_origin");
+	Iso3Data = JSON.parse(isodata)[0];
+	for(var key in Iso3Data){
+		if(Iso3Data.hasOwnProperty(key)){ //fill select options
+			var option = document.createElement("option");
+			option.text = Iso3Data[key]; //country name
+			option.value = key; //iso3
+			selectOrigin.add(option)
+		}
+	}
+}
+
+function getIndicatorNameWithOrigin(){
+	if(indicator_primary.substr(0, 8) === "Refugees"){
+		selectOrigin = document.getElementById("select_origin");
+		var selectedValue = selectOrigin.options[selectOrigin.selectedIndex].value;
+		var newIndicatorName = "Refugees_" + selectedValue;
+		return newIndicatorName;
+	}
+	return "Refugees_Total";
+}
+
+
 function updatePrimaryIndicator(){
 	newIndicatorName = selectPrimary.options[selectPrimary.selectedIndex].value;
+	if(newIndicatorName.substr(0, 8) === "Refugees"){ //set origin
+		if(indicator_primary.substr(0, 8) !== "Refugees"){
+			selectOrigin.options[0].value = "Total";
+		}
+		newIndicatorName = getIndicatorNameWithOrigin();
+	}
 	if(newIndicatorName == indicator_primary){
 		console.log("This indicator is already set as primary indicator.");
 		return;
@@ -161,7 +196,7 @@ function updatePrimaryIndicator(){
 		return;
 	}
 	//if newindicator exists display in html and set indicator_primary
-	if(indicatorList.includes(newIndicatorName)){
+	if(indicatorList.includes(newIndicatorName) || newIndicatorName.substr(0, 8) === "Refugees"){
 		indicator_primary = newIndicatorName;
 		updateToggle();
 		for(i = 0; i < selectSecondary.options.length; i++){
@@ -176,6 +211,19 @@ function updatePrimaryIndicator(){
 			visualizeData(selectedCountries[0].id, selectedCountries[1].id);
 		}
 		drawScatterplot(false);
+	}
+	if(indicator_primary.substr(0, 8) === "Refugees"){
+		d3.selectAll("path")
+			.style("fill", colorScale);
+	}
+	var selectOriginDiv = document.getElementById("select_origin_div");
+	if(indicator_primary.substr(0, 8) === "Refugees"){ //show origin select
+		selectOriginDiv.style.display = "flex";
+	} else {//hide origin select when not relevant
+		selectOriginDiv.style.display = "none";
+		selectOrigin.selectedIndex = 0;
+		d3.selectAll("path")
+			.style("fill", colorScale);
 	}
 }
 
@@ -207,8 +255,30 @@ function updateSecondaryIndicator(){
 		drawScatterplot(false);
 	}
 }
+
+function clearBarChart(){
+	svgComparison.selectAll("g").remove();
+	svgComparison.selectAll("text").remove();
+	svgComparison.selectAll("rect").remove();
+}
 		
 function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
+	if(typeof dp1 === "undefined" && typeof dp2 === "undefined"){
+		clearBarChart();
+		alert("No data for selection.");
+		return;
+	} else if(typeof dp1 === "undefined"){
+		clearBarChart();
+		alert("No data for country 1");
+		return;
+	} else if(typeof dp2 === "undefined"){
+		alert("No data for country 2");
+		dp2 = new Array(dp1.length);
+		dp2.forEach(function(d, i){
+			dp2[i] = null;
+		});
+	}
+
 	//console.log("d1: " + d1);
 	//console.log("d2: " + d2);
 	var data1 = [];
@@ -257,9 +327,7 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 	
 
 	if(!transition){
-		svgComparison.selectAll("g").remove();
-		svgComparison.selectAll("text").remove();
-		svgComparison.selectAll("rect").remove();
+		clearBarChart();
 
 		svgComparison.append("g")
 			.attr("class", "x axis")
@@ -708,7 +776,6 @@ function visualizeData(c1, c2, transition){
 	}
 }
 
-
 function drawWorldMap() {
 	var projection = d3.geoMercator()
 		.scale((Math.min(halfWidth,viewHeight)/500)*100)
@@ -759,25 +826,40 @@ function drawWorldMap() {
 		.text(function(d, i){ return intervalsrounded[i]; });
 }
 
+function setColorDomain(){
+	colorDomain = d3.scaleQuantile().domain(domain);
+}
+
 function colorScale(d){	
+	var t = [];
+	var j = 0;
 	if (d != null) {
+		var mapIndicator;
+		if(indicator_primary.substr(0, 8) === "Refugees"){
+			mapIndicator = indicator_primary;
+		} else {
+			mapIndicator = "Refugees_Total";
+		}
 		var countryCode = d.id
+
 		// var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+		var colors = colorDomain.range(d3.schemeYlGnBu[9]);	
+
 		// var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);			
 		if(countryData[countryCode]){
-			if(countryData[countryCode]["Refugees_Total"]){
-				value = countryData[countryCode]["Refugees_Total"][yearToIndex(selected_year)];
+			if(countryData[countryCode][mapIndicator]){
+				value = countryData[countryCode][mapIndicator][yearToIndex(selected_year)];
 				return colors(value);
 			} else {
-				return "white"
+				return "white";
 			}
 			
 		} else {
-			return "black"
+			return "white";
 		}
 	}
 }
+
 	
 function colorDots(d) { 
 	if (selectedCountries[0] == null) {
@@ -977,6 +1059,7 @@ function zoomed() {
 	})
 }
 
+
 function setYear(y, transitionTime, isPlay) {
  	// console.log("Selected year is set to: " + y);
 	selected_year = y;
@@ -985,7 +1068,10 @@ function setYear(y, transitionTime, isPlay) {
 	output.innerHTML = selected_year;
 	slider.value = selected_year;	
 	// update world map
-	d3.selectAll("path").style("fill", colorScale)
+	d3.selectAll("path")
+		.transition()
+		.duration(typeof transitionTime === "undefined" ? 2000 : transitionTime)
+		.style("fill", colorScale);
 	// 2 countries need to be selected before calling 'visualizeData()'
 	if (selectedCountries[1] !== null) {
 		visualizeData(selectedCountries[0].id, selectedCountries[1].id, true);
@@ -1100,6 +1186,10 @@ function initOptions(indicatorNamesList){
 	indicatorNamesList.forEach(function(element){
 		var option = document.createElement("option"); 
 		option.text = element;
+		if(element === "Refugees_Total"){
+			option.text = "Refugees";
+			option.value = "Refugees_Total";
+		}
 		selectPrimary.add(option);
 	});
 
@@ -1154,6 +1244,7 @@ function stop() {
 
 function play() {
 	var transitionTime = 500;
+	var pauseTime = 50;
 	if (timer) { stop(); return; };
 	if (selected_year == EndYear - 1) {
 		selected_year = StartYear;
@@ -1170,7 +1261,7 @@ function play() {
 		}
 	};
 	advance();
-	timer = setInterval(advance, transitionTime / transitionSpeedMultiplier);
+	timer = setInterval(advance, (transitionTime + pauseTime) / transitionSpeedMultiplier);
 }
 
 
