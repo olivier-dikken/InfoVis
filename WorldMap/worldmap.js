@@ -170,7 +170,7 @@ var colorDomain = [];
 // Store data.json, our dataset of UNHCR and WorldBank data
 var countryData;
 
-d3.json("resources/data_v3.json", function(error, data){
+d3.json("resources/data_v4.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
 	// Store all domain values for color scaling
