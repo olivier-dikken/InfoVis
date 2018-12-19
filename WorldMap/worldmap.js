@@ -173,7 +173,7 @@ d3.json("countries.topo.json", function(error, world) {
 
 function updateColorDomain(){
 	var newIndicator = getIndicatorNameWithOrigin();
-	domain = [];
+	domain = [0, 1];
 	var done = false;
 	Object.keys(countryData).map(function(c) { 
 		if (countryData[c][newIndicator] != undefined) { 
