@@ -1119,6 +1119,8 @@ function clicked(){
 // Unselect countries and remove selected country styles
 function resetCountrySelection(){
 	document.getElementById("selectTip").innerHTML = "Select two countries";
+	document.getElementById("SelectedCountry_1").innerHTML = "";
+	document.getElementById("SelectedCountry_2").innerHTML = "";
 	document.getElementById("vsText").innerHTML = "";
 	selectedCountries.forEach(function(elem){
 		if(elem === null){
