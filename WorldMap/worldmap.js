@@ -18,8 +18,27 @@ var doNorm = false;
 document.getElementById("ToggleCheckbox").checked = doNorm;
 
 // Initialization configuration
-var indicatorList = ["Refugees_Total", "GDP growth (annual %)", "GDP per capita (current US$)", "Population density (people per sq. km of land area)", "Population growth (annual %)"];
-var multiplyInicatorList = ["Population density (people per sq. km of land area)"];
+var indicatorList = 
+["Refugees_Total",
+"Land area (sq. km)",
+"Individuals using the Internet (% of population)",
+"Population growth (annual %)",
+"International migrant stock|total",
+"Labor force|total",
+"Wage and salaried workers|total (% of total employment) (modeled ILO estimate)",
+"Urban land area (sq. km)",
+"GDP growth (annual %)",
+"GDP (current US$)",
+"Population|total",
+"GDP per capita (current US$)",
+"GNI (current US$)",
+"Electric power consumption (kWh per capita)"];
+var percentageIndicatorList =
+["Individuals using the Internet (% of population)",
+"Population growth (annual %)",
+"Wage and salaried workers|total (% of total employment) (modeled ILO estimate)",
+"GDP growth (annual %)"];
+
 var StartYear = 1951;
 var EndYear = 2018;
 var xArray = Array.range(StartYear, EndYear);
@@ -151,7 +170,7 @@ var colorDomain = [];
 // Store data.json, our dataset of UNHCR and WorldBank data
 var countryData;
 
-d3.json("resources/data.json", function(error, data){
+d3.json("resources/data_v3.json", function(error, data){
 	if(error) return console.error(error);	
 	countryData = data;
 	// Store all domain values for color scaling
@@ -188,8 +207,7 @@ d3.json("countries.topo.json", function(error, world) {
 //when changing refugees origin (all, or specific country of origin) update the color domain of the world map
 function updateColorDomain(){
 	var newIndicator = getIndicatorNameWithOrigin();
-	//domain = [0, 1];
-	domain = [];
+	domain = [0, 1];
 	var done = false;
 	Object.keys(countryData).map(function(c) { 
 		if (countryData[c][newIndicator] != undefined) { 
@@ -337,11 +355,11 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			if(!doNorm){// No normalization
 				item.computed = item.pval;
 			} else {
-				if(multiplyInicatorList.includes(indicator_secondary)){
-					// Normalization through multiplication
-					item.computed =  item.pval * item.sval;
+				if(percentageIndicatorList.includes(indicator_secondary)){
+					// Normalization for indicators expressed as percentages
+					item.computed =  item.pval / (1 + item.sval/100);
 				} else {
-					// Normalization through division
+					// Normalization for indicators representing a total volume
 					item.computed =  item.pval / item.sval;
 				}
 			}
@@ -354,11 +372,11 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 			if(!doNorm){// No normalization
 				item.computed = item.pval;
 			} else {
-				if(multiplyInicatorList.includes(indicator_secondary)){
-					// Normalization through multiplication
-					item.computed =  item.pval * item.sval;
+				if(percentageIndicatorList.includes(indicator_secondary)){
+					// Normalization for indicators expressed as percentages
+					item.computed =  item.pval /(1 + item.sval/100);
 				} else {
-					// Normalization through division
+					// Normalization for indicators representing a total volume
 					item.computed =  item.pval / item.sval;
 				}
 			}
@@ -407,9 +425,12 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 		if(doNorm){
 			var abbrLength = {"long": 16, "short": 10};
 			var sign = "/";
-			if(multiplyInicatorList.includes(indicator_secondary))
-				sign = "*";
-			newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+			var closeParentheses = "";
+			if(percentageIndicatorList.includes(indicator_secondary)){
+				sign = "/ (1 + ";
+				closeParentheses = "% ) ";
+			}
+			newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + closeParentheses + ")" + " per Year";
 		}
 
 		// Add text label to y axis
@@ -810,6 +831,9 @@ function visualizeData(c1, c2, transition){
 	} else {
 		// Fill arrays with data for country 2
 		data_2 = countryData[c2][indicator_primary];
+		console.log("country data:");
+		console.log(countryData[c2]);
+		console.log("indicator secondary: " + indicator_secondary);
 		data_2_secondary = countryData[c2][indicator_secondary];
 		hasData_2 = true;
 	}
@@ -1289,10 +1313,15 @@ function updateToggle() {
 	if(doNorm){
 		// Normalization option is selected
 		var sign = "/";
-		if(multiplyInicatorList.includes(indicator_secondary))
-			sign = "*";
-		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
-		var newIndicatorHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + indicator_secondary.substr(0,abbrLength.short) + ")" + " per Year";
+		var afterSign = "";
+		var closeParentheses = "";
+		if(percentageIndicatorList.includes(indicator_secondary)){
+			sign = "/";
+			afterSign = "(1 + "
+			closeParentheses = "% ) ";
+		}
+		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + afterSign + indicator_secondary.substr(0,abbrLength.short) + closeParentheses + ")" + " per Year";
+		var newIndicatorHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + afterSign + indicator_secondary.substr(0,abbrLength.short) + closeParentheses + ")" + " per Year";
 
 		document.getElementById("ToggleStatus").innerHTML = newIndicatorHTML;
 
