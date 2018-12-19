@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 
-path = "../WorldMap/resources/dataset_v2.csv"
+path = "../WorldMap/resources/dataset_v3.csv"
 
 data = {}
 group = pd.read_csv(path).groupby(["Country"]).apply(lambda x: x.drop('Country', axis = 1).to_dict(orient='records')).to_dict()
@@ -14,7 +14,7 @@ for key, value in group.items():
         dict[indicator] = values
     data[key] = dict
 
-with open("data.json", 'w') as fp:
+with open("data_v3.json", 'w') as fp:
     json.dump(data, fp, sort_keys=True)
 
 
