@@ -831,9 +831,6 @@ function visualizeData(c1, c2, transition){
 	} else {
 		// Fill arrays with data for country 2
 		data_2 = countryData[c2][indicator_primary];
-		console.log("country data:");
-		console.log(countryData[c2]);
-		console.log("indicator secondary: " + indicator_secondary);
 		data_2_secondary = countryData[c2][indicator_secondary];
 		hasData_2 = true;
 	}
@@ -1019,10 +1016,17 @@ function dotRadius(d) {
 		return 3.5;
 	}
 }
+
+//add commas for easier reading
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 	
 // Function that shows tooltip for scatterplot and highlights corresponding country on world map
 // d: Country object	
 function showDotTooltip(d) {
+	console.log("d");
+	console.log(d);
 	country = document.getElementById(d.ISO_code);
 	label = d.ISO_code;
 	
@@ -1032,7 +1036,11 @@ function showDotTooltip(d) {
 		country.setAttribute("stroke-width", 5/zoomk + "px");
 		
 		// Label for tooltip
+		var newline = "\n";
 		label = country.getAttribute("name");
+		label = "<strong>" + country.getAttribute("name") + "</strong>" + newline;
+		label += indicator_primary + ": " + numberWithCommas(d.indicator_primary) + newline;
+		label += indicator_secondary + ": " + numberWithCommas(d.indicator_secondary);
 	}
 	// Add tooltip
 	var mouse = d3.mouse(svgScatter.node())
@@ -1110,6 +1118,8 @@ function clicked(){
 
 // Unselect countries and remove selected country styles
 function resetCountrySelection(){
+	document.getElementById("selectTip").innerHTML = "Select two countries";
+	document.getElementById("vsText").innerHTML = "";
 	selectedCountries.forEach(function(elem){
 		if(elem === null){
 		} else {
@@ -1134,6 +1144,7 @@ function setSelected(element){
 		return;
 	}
 	if(selectedCountries[0] === null){//if no countries selected set 1st selection
+		document.getElementById("selectTip").innerHTML = "Select country to compare against: ";
 		selectedCountries[0] = element;
 		document.getElementById("SelectedCountry_1").innerHTML = selectedCountries[0].__data__.properties.name;
 		d3.select(selectedCountries[0]).classed('selected_1', true);
@@ -1156,6 +1167,8 @@ function setSelected(element){
 			transition = false;
 		}
 		selectedCountries[1] = element;
+		document.getElementById("selectTip").innerHTML = "";
+		document.getElementById("vsText").innerHTML = " vs ";
 		document.getElementById("SelectedCountry_2").innerHTML = selectedCountries[1].__data__.properties.name;
 		d3.select(selectedCountries[1]).classed('selected_2', true);
 		d3.select(selectedCountries[1]).attr("stroke-width", 5/zoomk + "px");
@@ -1322,13 +1335,11 @@ function updateToggle() {
 		}
 		newIndicatorLabel = "(" + indicator_primary.substr(0, abbrLength.short) + sign + afterSign + indicator_secondary.substr(0,abbrLength.short) + closeParentheses + ")" + " per Year";
 		var newIndicatorHTML = "(" + indicator_primary.substr(0, abbrLength.short) + " <strong>" + sign + "</strong> " + afterSign + indicator_secondary.substr(0,abbrLength.short) + closeParentheses + ")" + " per Year";
-
-		document.getElementById("ToggleStatus").innerHTML = newIndicatorHTML;
-
+		document.getElementById("ToggleStatus").innerHTML = "Normalize Bar Chart <strong>ON</strong>";
 	} else {
 		// No normalization
 		newIndicatorLabel = indicator_primary.substr(0, abbrLength.long) + " per Year";
-		document.getElementById("ToggleStatus").innerHTML = newIndicatorLabel;
+		document.getElementById("ToggleStatus").innerHTML = "Normalize Bar Chart <strong>OFF</strong>";
 	}
 
 	// Update dual bar chart and y label
