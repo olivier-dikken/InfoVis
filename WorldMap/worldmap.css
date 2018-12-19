@@ -11,6 +11,10 @@ svg {
   background-color: white;
 }
 
+#svgMap{
+  background-color: lightgrey;
+}
+
 .comparison {
   background-color: white;
 }
@@ -24,7 +28,7 @@ svg {
 }
 
 .countrydothovered {
-  stroke: green;
+  stroke: yellow;
 }
 
 .defaultCountry{
@@ -64,7 +68,7 @@ svg {
 }
 
 .dothovered {
-	fill: green;
+	fill: yellow;
 }
 
 div.tooltip {

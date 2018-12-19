@@ -49,6 +49,7 @@ var zoom = d3.zoom()
 	 .scaleExtent([1, 20])
 	 .translateExtent([[0, 0], [svgInnerHalfWidth, svgInnerFullHeight]])
 	 .on("zoom", zoomed);
+var mapColorScheme = d3.schemeGreens[7];
 //init global zoom variables
 var zoomk = 1;
 
@@ -130,6 +131,7 @@ var countryStyle = function(d, i) { return "fill-opacity: " + (1) };
 //get domain values for refugees indicator to determine scale
 //TODO get distribution to change scale to non-linear (i.e. log)
 var domain = [];
+
 var colorDomain = [];
 
 var countryData; // store data.json
@@ -149,6 +151,7 @@ d3.json("resources/data.json", function(error, data){
 	setColorDomain();
 });
 
+
 d3.json("countries.topo.json", function(error, world) {
 	if(error) return console.error(error);
 	worldData = world;
@@ -166,6 +169,20 @@ d3.json("countries.topo.json", function(error, world) {
 		selectOrigin.add(option)
 	});
 });
+
+
+function updateColorDomain(){
+	var newIndicator = getIndicatorNameWithOrigin();
+	domain = [];
+	var done = false;
+	Object.keys(countryData).map(function(c) { 
+		if (countryData[c][newIndicator] != undefined) { 
+			domain.push(countryData[c][newIndicator][selected_year- StartYear]);
+		}
+	});
+	setColorDomain();
+	updateMapLegendAndScale();
+}
 
 function getIndicatorNameWithOrigin(){
 	if(indicator_primary.substr(0, 8) === "Refugees"){
@@ -211,7 +228,8 @@ function updatePrimaryIndicator(){
 		drawScatterplot(false);
 	}
 	if(indicator_primary.substr(0, 8) === "Refugees"){
-		d3.selectAll("path")
+		updateColorDomain();
+		svgMap.selectAll("path")
 			.style("fill", colorScale);
 	}
 	var selectOriginDiv = document.getElementById("select_origin_div");
@@ -220,7 +238,7 @@ function updatePrimaryIndicator(){
 	} else {//hide origin select when not relevant
 		selectOriginDiv.style.display = "none";
 		selectOrigin.selectedIndex = 0;
-		d3.selectAll("path")
+		svgMap.selectAll("path")
 			.style("fill", colorScale);
 	}
 }
@@ -498,41 +516,6 @@ function drawDualBarChart(dp1, dp2, ds1, ds2, transition) {
 	} 	
 }
 
-function setter() {
-
-  var s,
-      props = [];
-
-  function add(type) {
-    return function(key,value) {
-      props.push({type: type, key: key, value: value});
-      return s;
-    };
-  }
-
-  function set() {
-
-    return function(selection) {
-
-      if (!(selection instanceof d3.selection || selection instanceof d3.transition)) {
-          selection  = d3.select(this);
-      }
-
-      props.forEach(function(prop){
-        selection[prop.type](prop.key,prop.value);
-      });
-
-    };
-
-  }
-
-  return s = {
-    style: add("style"),
-    attr: add("attr"),
-    set: set
-  };
-
-}
 
 function drawScatterplot(transition, transitionTime, isPlay) {
 	
@@ -798,9 +781,9 @@ function drawWorldMap() {
 			.attr("d", path)
 			.attr("style",  countryStyle)
 			.style("fill", colorScale);	
-				
-	intervals = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]).quantiles();
-	intervalsrounded = intervals.map(function(d) { return Math.round(d) });
+			
+	intervals = d3.scaleQuantile().domain(domain).range(mapColorScheme).quantiles();
+	intervalsrounded = [0].concat(intervals).map(function(d) { return Math.round(d) });
 
 	// Adding legend to map
 	var legend = g.selectAll("g.legend")
@@ -808,7 +791,7 @@ function drawWorldMap() {
 		.enter().append("g")
 		.attr("class", "legend");
 
-	var colorsFunction = d3.scaleQuantile().domain(domain).range(d3.schemeYlGnBu[9]);	
+	var colorsFunction = d3.scaleQuantile().domain(domain).range(mapColorScheme);	
 	
 	var ls_w = 20, ls_h = 20; var height = 200;
 	legend.append("rect")
@@ -816,12 +799,53 @@ function drawWorldMap() {
 		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
 		.attr("width", ls_w)
 		.attr("height", ls_h)
-		.style("fill", function(d, i) { return colorsFunction.range()[i+1]; });
+		.style("fill", function(d, i) { return colorsFunction.range()[i]; });
 
 	legend.append("text")
 		.attr("x", 50)
 		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
 		.text(function(d, i){ return intervalsrounded[i]; });
+
+	legend.append("text")
+		.attr("x", 20)
+		.attr("y", 20)
+		.text(getIndicatorNameWithOrigin());
+}
+
+
+function updateMapLegendAndScale(){
+	intervals = d3.scaleQuantile().domain(domain).range(mapColorScheme).quantiles();
+	intervalsrounded = [0].concat(intervals).map(function(d) { return Math.round(d) });
+
+	var g = svgMap.select("g");
+
+	g.selectAll("g").remove();
+
+	// Adding legend to map
+	var legend = g.selectAll("g.legend")
+		.data(intervalsrounded)
+		.enter().append("g")
+		.attr("class", "legend");
+
+	var colorsFunction = d3.scaleQuantile().domain(domain).range(mapColorScheme);	
+	
+	var ls_w = 20, ls_h = 20; var height = 200;
+	legend.append("rect")
+		.attr("x", 20)
+		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
+		.attr("width", ls_w)
+		.attr("height", ls_h)
+		.style("fill", function(d, i) { return colorsFunction.range()[i]; });
+
+	legend.append("text")
+		.attr("x", 50)
+		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
+		.text(function(d, i){ return intervalsrounded[i]; });
+
+	legend.append("text")
+		.attr("x", 20)
+		.attr("y", 20)
+		.text(getIndicatorNameWithOrigin());
 }
 
 function setColorDomain(){
@@ -841,7 +865,7 @@ function colorScale(d){
 		var countryCode = d.id
 
 		// var rangeColors = ["#adfcad", "#ffcb40", "#ffba00", "#ff7d73", "#ff4e40", "#ff1300"]
-		var colors = colorDomain.range(d3.schemeYlGnBu[9]);	
+		var colors = colorDomain.range(mapColorScheme);	
 
 		// var colors = d3.scaleQuantile().domain(d3.extent(domain)).range(rangeColors);			
 		if(countryData[countryCode]){
@@ -849,11 +873,11 @@ function colorScale(d){
 				value = countryData[countryCode][mapIndicator][yearToIndex(selected_year)];
 				return colors(value);
 			} else {
-				return "white";
+				return "grey";
 			}
 			
 		} else {
-			return "white";
+			return "grey";
 		}
 	}
 }
@@ -1046,7 +1070,7 @@ function zoomed() {
 	d3.select("g").attr("transform", d3.event.transform);
 
 	//adjust the stroke width based on zoom level
-	d3.selectAll("path").attr("stroke-width", 1 / zoomk);
+	svgMap.selectAll("path").attr("stroke-width", 1 / zoomk);
 
 	//put class selected on selection
 	selectedCountries.forEach(function(elem){
@@ -1066,7 +1090,8 @@ function setYear(y, transitionTime, isPlay) {
 	output.innerHTML = selected_year;
 	slider.value = selected_year;	
 	// update world map
-	d3.selectAll("path")
+	updateColorDomain();
+	svgMap.selectAll("path")
 		.transition()
 		.duration(typeof transitionTime === "undefined" ? 2000 : transitionTime)
 		.style("fill", colorScale);
