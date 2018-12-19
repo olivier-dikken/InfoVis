@@ -152,7 +152,13 @@ d3.json("resources/data.json", function(error, data){
 d3.json("countries.topo.json", function(error, world) {
 	if(error) return console.error(error);
 	worldData = world;
+	// Add all country names and ISO codes to dropdown list
 	selectOrigin = document.getElementById("select_origin");
+	var option = document.createElement("option");
+	// Add default option Total / All countries
+	option.text = "All"; 
+	option.value = "Total";
+	selectOrigin.add(option)
 	worldData.objects.countries.geometries.forEach(function(d) {
 		var option = document.createElement("option");
 		option.text = d.properties.name; // Country name
